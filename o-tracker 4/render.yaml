@@ -1,0 +1,44 @@
+# Render blueprint for O Tracker.
+# Deploy: push to a Git repo, then "New + → Blueprint" in the Render dashboard.
+# Set the secret env vars (marked sync:false) in the dashboard after first deploy.
+services:
+  - type: web
+    name: o-tracker
+    runtime: node
+    plan: starter # free tier sleeps after 15 min; Starter (~$7/mo) keeps webhooks responsive
+    buildCommand: npm install && npm run build && npx prisma migrate deploy
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PUBLIC_URL
+        sync: false # e.g. https://o-tracker.onrender.com (set to this service's URL)
+      - key: DATABASE_URL
+        fromDatabase:
+          name: o-tracker-db
+          property: connectionString
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_WEBHOOK_SECRET
+        generateValue: true
+      - key: OURA_CLIENT_ID
+        sync: false
+      - key: OURA_CLIENT_SECRET
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: ENCRYPTION_KEY
+        sync: false # node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+      - key: DEFAULT_LANGUAGE
+        value: ru
+      - key: GEMINI_DAILY_QUOTA_PER_USER
+        value: "8"
+      - key: METRIC_CONTEXT_DAYS
+        value: "7"
+
+databases:
+  - name: o-tracker-db
+    plan: basic-256mb # managed Postgres (~$6-7/mo)

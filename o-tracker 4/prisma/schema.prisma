@@ -1,0 +1,104 @@
+// O Tracker — Prisma schema
+// Postgres. Tokens are stored application-encrypted (AES-256-GCM), never in plaintext.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Language {
+  ru
+  en
+  pt
+}
+
+model User {
+  id                Int       @id @default(autoincrement())
+  telegramId        BigInt    @unique
+  telegramUsername  String?
+  firstName         String?
+
+  language          Language  @default(ru)
+  timezone          String    @default("Europe/Lisbon") // IANA tz
+  summaryHour       Int       @default(8)                // local hour 0-23 for daily summary
+  generalHealthMode Boolean   @default(false)            // "general health questions" toggle (off by default)
+
+  ouraConnected     Boolean   @default(false)
+
+  token             OuraToken?
+  metrics           DailyMetric[]
+  geminiUsage       GeminiUsage[]
+  oauthStates       OAuthState[]
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([summaryHour])
+  @@map("users")
+}
+
+model OuraToken {
+  userId           Int      @id
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  accessTokenEnc   String                     // AES-256-GCM ciphertext
+  refreshTokenEnc  String
+  expiresAt        DateTime                   // access token expiry
+  scope            String?
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("oura_tokens")
+}
+
+// Short-lived state param binding an OAuth authorize round-trip to a Telegram user.
+model OAuthState {
+  state      String   @id
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([expiresAt])
+  @@map("oauth_states")
+}
+
+// One row per user per day; raw Oura payloads cached as JSON so the dashboard and
+// Gemini never hit the Oura API on read.
+model DailyMetric {
+  userId        Int
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  day           DateTime @db.Date
+
+  sleep         Json?
+  readiness     Json?
+  activity      Json?
+  heartrate     Json?
+  spo2          Json?
+  stress        Json?
+  resilience    Json?
+  temperature   Json?
+  cardio        Json?    // cardiovascular age + VO2 max snapshot
+
+  updatedAt     DateTime @updatedAt
+
+  @@id([userId, day])
+  @@index([userId, day])
+  @@map("daily_metrics")
+}
+
+// Per-user daily Gemini request counter (protects the shared free-tier pool).
+model GeminiUsage {
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  day        DateTime @db.Date
+  count      Int      @default(0)
+
+  @@id([userId, day])
+  @@map("gemini_usage_log")
+}
