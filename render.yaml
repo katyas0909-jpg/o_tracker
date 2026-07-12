@@ -6,7 +6,7 @@ services:
     name: o-tracker
     runtime: node
     plan: free # free tier sleeps after 15 min; Starter (~$7/mo) keeps webhooks responsive
-    buildCommand: npm install && npm run build && npx prisma migrate deploy
+    buildCommand: npm install && npm run build && npx prisma db push
     startCommand: npm start
     healthCheckPath: /healthz
     envVars:
