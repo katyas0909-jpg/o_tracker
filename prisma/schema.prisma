@@ -29,6 +29,11 @@ model User {
 
   ouraConnected     Boolean   @default(false)
 
+  // Optional per-user Gemini API key (AES-256-GCM encrypted). If set, the
+  // assistant uses this user's own key/quota; otherwise it falls back to the
+  // shared owner key from GEMINI_API_KEY.
+  geminiKeyEnc      String?
+
   token             OuraToken?
   metrics           DailyMetric[]
   geminiUsage       GeminiUsage[]
