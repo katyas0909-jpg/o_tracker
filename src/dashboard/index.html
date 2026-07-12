@@ -182,7 +182,16 @@
   .tooltip .tt-v { font-weight: 700; font-variant-numeric: tabular-nums; }
 
   footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 30px; }
-  footer a { color: var(--muted); }
+  .foot-links { margin-top: 16px; }
+  .foot-links a { color: var(--muted); }
+  .feedback-btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: var(--series-1); color: #06122b; text-decoration: none;
+    font-size: 14px; font-weight: 600; padding: 10px 20px; border-radius: 11px;
+    box-shadow: var(--shadow); transition: transform .1s, filter .1s;
+  }
+  html[data-theme="light"] .feedback-btn { color: #fff; }
+  .feedback-btn:hover { filter: brightness(1.05); transform: translateY(-1px); }
 
   .demo-flag {
     display: inline-block; font-size: 11px; font-weight: 600; color: var(--warning);
@@ -245,9 +254,13 @@
     <div class="grid" id="metricGrid"></div>
 
     <footer>
-      <span id="footText">O Tracker — независимый ассистент для данных Oura Ring.</span><br>
-      <a href="/privacy" id="footPriv">Политика конфиденциальности</a> ·
-      <a href="/terms" id="footTerms">Условия</a>
+      <a class="feedback-btn" id="feedbackBtn"
+         href="mailto:katyas0909@gmail.com?subject=O%20Tracker%20%E2%80%94%20feedback">💬 Оставить отзыв для Kate</a>
+      <div class="foot-links">
+        <span id="footText">O Tracker — независимый ассистент для данных Oura Ring.</span><br>
+        <a href="/privacy" id="footPriv">Политика конфиденциальности</a> ·
+        <a href="/terms" id="footTerms">Условия</a>
+      </div>
     </footer>
   </main>
 
@@ -268,6 +281,7 @@ const I18N = {
     insightSrc: "O Tracker · на основе ваших данных",
     loginTitle: "Показаны примерные данные", loginSub: "Войдите через Telegram, чтобы увидеть свои",
     loginError: "Не удалось загрузить данные. Убедитесь, что вы подключили Oura в боте (/connect).",
+    feedback: "💬 Оставить отзыв для Kate",
     foot: "O Tracker — независимый ассистент для данных Oura Ring.",
     footPriv: "Политика конфиденциальности", footTerms: "Условия",
     stateGood: "оптимально", stateWarn: "хорошо", stateLow: "обратите внимание",
@@ -302,6 +316,7 @@ const I18N = {
     insightSrc: "O Tracker · based on your data",
     loginTitle: "Showing example data", loginSub: "Log in with Telegram to see yours",
     loginError: "Couldn't load your data. Make sure you connected Oura in the bot (/connect).",
+    feedback: "💬 Leave feedback for Kate",
     foot: "O Tracker — an independent assistant for your Oura Ring data.",
     footPriv: "Privacy Policy", footTerms: "Terms",
     stateGood: "optimal", stateWarn: "good", stateLow: "pay attention",
@@ -336,6 +351,7 @@ const I18N = {
     insightSrc: "O Tracker · com base nos seus dados",
     loginTitle: "A mostrar dados de exemplo", loginSub: "Entre com o Telegram para ver os seus",
     loginError: "Não foi possível carregar os seus dados. Confirme que ligou o Oura no bot (/connect).",
+    feedback: "💬 Deixar feedback para a Kate",
     foot: "O Tracker — um assistente independente para os dados do seu Oura Ring.",
     footPriv: "Política de Privacidade", footTerms: "Termos",
     stateGood: "ótimo", stateWarn: "bom", stateLow: "atenção",
@@ -570,6 +586,7 @@ function render() {
 
   // footer
   $("#footText").textContent = L.foot; $("#footPriv").textContent = L.footPriv; $("#footTerms").textContent = L.footTerms;
+  $("#feedbackBtn").textContent = L.feedback;
 
   // metric cards
   const t = SAMPLE.today;
