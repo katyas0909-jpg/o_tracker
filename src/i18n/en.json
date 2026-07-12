@@ -1,0 +1,69 @@
+{
+  "start": {
+    "welcome": "Hi! I'm *O Tracker* — an assistant for your Oura Ring.\n\nI'll send a daily summary of sleep, readiness and activity, and answer questions about your data.\n\nTo begin, connect your Oura account — it's secure, your password is only entered on Oura's site.",
+    "chooseLanguage": "First, choose your language:",
+    "connectButton": "🔗 Connect Oura",
+    "languageSet": "Language switched to English 🇬🇧"
+  },
+  "connect": {
+    "prompt": "Tap the button below to connect your Oura account. The link is one-time and valid for 10 minutes.",
+    "button": "🔗 Connect Oura",
+    "already": "Your Oura account is already connected ✅. To reconnect, use /connect again.",
+    "success": "Done! Your Oura account is connected ✅\n\nNow ask me anything about your data or wait for the morning summary. Commands — /help.",
+    "linkText": "Open the connection page"
+  },
+  "settings": {
+    "title": "⚙️ Settings",
+    "language": "Language: {lang}",
+    "timezone": "Timezone: {tz}",
+    "summaryTime": "Summary time: {time}",
+    "generalMode": "General health questions: {state}",
+    "on": "on",
+    "off": "off",
+    "askSummaryTime": "What time should I send your daily summary? Send an hour as HH:MM (e.g. 08:00).",
+    "summaryTimeSet": "Summary time set to {time} ✅",
+    "askTimezone": "Send your timezone in IANA format (e.g. Europe/Lisbon).",
+    "timezoneSet": "Timezone set: {tz} ✅",
+    "generalToggled": "General health questions: {state}",
+    "disconnect": "🗑 Disconnect Oura and delete data",
+    "disconnected": "Oura account disconnected and all your data deleted. You can reconnect any time with /connect."
+  },
+  "summary": {
+    "title": "☀️ Summary for {date}",
+    "sleep": "😴 Sleep: *{score}* ({dur})",
+    "readiness": "🔋 Readiness: *{score}*",
+    "activity": "🏃 Activity: *{score}* ({steps} steps)",
+    "noData": "No data for today yet. Your ring may not have synced, or Oura Membership may be required.",
+    "openDashboard": "📊 Open dashboard"
+  },
+  "assistant": {
+    "thinking": "Thinking about your data…",
+    "notConnected": "Connect your Oura account first with /connect — then I can answer from your data.",
+    "quotaReached": "You've hit today's question limit. Try again tomorrow — that keeps the shared free tier working for everyone 🙏",
+    "rateLimited": "It's busy right now, please try again in a couple of minutes.",
+    "error": "Couldn't process that. Please try again a bit later.",
+    "generalPrompt": "That's a general question — it isn't based on your Oura data. Answer it as general advice?",
+    "generalYes": "Yes, general advice",
+    "generalTag": "ℹ️ General information, not based on your data.",
+    "generalDisabled": "That's a general health question, not about your specific numbers. Enable general-questions mode in /settings if you'd like those answers."
+  },
+  "help": {
+    "text": "*O Tracker commands*\n\n/today — today's summary\n/week — weekly overview\n/connect — connect/reconnect Oura\n/settings — language, timezone, summary time\n/language — change language\n/help — this help\n\nJust type a question — I'll answer from your data.",
+    "medical": "I don't diagnose. For medical questions, please see a professional."
+  },
+  "metrics": {
+    "sleep": "Sleep",
+    "readiness": "Readiness",
+    "activity": "Activity",
+    "hrv": "HRV",
+    "rhr": "Resting HR",
+    "temperature": "Body temperature",
+    "spo2": "SpO₂",
+    "stress": "Stress",
+    "resilience": "Resilience",
+    "steps": "Steps"
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again."
+  }
+}
