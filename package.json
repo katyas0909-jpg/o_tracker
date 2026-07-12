@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc -p tsconfig.json || true",
+    "build": "tsc -p tsconfig.json || true && mkdir -p dist/dashboard dist/legal && cp src/dashboard/*.html dist/dashboard/ && cp src/legal/*.html dist/legal/",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "prisma:generate": "prisma generate",
