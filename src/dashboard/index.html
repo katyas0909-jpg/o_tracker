@@ -109,6 +109,15 @@
   .greeting h1 { font-size: 22px; margin: 0 0 2px; letter-spacing: -0.02em; }
   .greeting .date { color: var(--muted); font-size: 14px; }
 
+  .loginbar {
+    display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 14px 18px; margin-bottom: 16px;
+  }
+  .loginbar-txt strong { display: block; font-size: 15px; }
+  .loginbar-txt span { color: var(--text-secondary); font-size: 13px; }
+  .tg-login { min-height: 40px; display: flex; align-items: center; }
+
   /* ---- today hero ---- */
   .today {
     background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius);
@@ -214,6 +223,14 @@
       <div class="date" id="gDate">—</div>
     </div>
 
+    <div class="loginbar" id="loginBar" style="display:none">
+      <div class="loginbar-txt">
+        <strong id="loginTitle">Показаны примерные данные</strong>
+        <span id="loginSub">Войдите через Telegram, чтобы увидеть свои</span>
+      </div>
+      <div id="tgLoginBtn" class="tg-login"></div>
+    </div>
+
     <section class="today">
       <div class="today-rings" id="todayRings"></div>
       <div class="insight" id="insightBox">
@@ -249,6 +266,8 @@ const I18N = {
     greetMorning: "Доброе утро", greetDay: "Добрый день", greetEvening: "Добрый вечер",
     demo: "демо",
     insightSrc: "O Tracker · на основе ваших данных",
+    loginTitle: "Показаны примерные данные", loginSub: "Войдите через Telegram, чтобы увидеть свои",
+    loginError: "Не удалось загрузить данные. Убедитесь, что вы подключили Oura в боте (/connect).",
     foot: "O Tracker — независимый ассистент для данных Oura Ring.",
     footPriv: "Политика конфиденциальности", footTerms: "Условия",
     stateGood: "оптимально", stateWarn: "хорошо", stateLow: "обратите внимание",
@@ -281,6 +300,8 @@ const I18N = {
     greetMorning: "Good morning", greetDay: "Good afternoon", greetEvening: "Good evening",
     demo: "demo",
     insightSrc: "O Tracker · based on your data",
+    loginTitle: "Showing example data", loginSub: "Log in with Telegram to see yours",
+    loginError: "Couldn't load your data. Make sure you connected Oura in the bot (/connect).",
     foot: "O Tracker — an independent assistant for your Oura Ring data.",
     footPriv: "Privacy Policy", footTerms: "Terms",
     stateGood: "optimal", stateWarn: "good", stateLow: "pay attention",
@@ -313,6 +334,8 @@ const I18N = {
     greetMorning: "Bom dia", greetDay: "Boa tarde", greetEvening: "Boa noite",
     demo: "demo",
     insightSrc: "O Tracker · com base nos seus dados",
+    loginTitle: "A mostrar dados de exemplo", loginSub: "Entre com o Telegram para ver os seus",
+    loginError: "Não foi possível carregar os seus dados. Confirme que ligou o Oura no bot (/connect).",
     foot: "O Tracker — um assistente independente para os dados do seu Oura Ring.",
     footPriv: "Política de Privacidade", footTerms: "Termos",
     stateGood: "ótimo", stateWarn: "bom", stateLow: "atenção",
@@ -524,6 +547,10 @@ function render() {
     {weekday:"long", day:"numeric", month:"long"});
   $("#demoFlag").textContent = L.demo;
   $("#demoFlag").style.display = IS_DEMO ? "" : "none";
+  // login bar (only in demo / logged-out state)
+  $("#loginBar").style.display = IS_DEMO ? "" : "none";
+  $("#loginTitle").textContent = L.loginTitle;
+  $("#loginSub").textContent = L.loginSub;
 
   // today rings
   const lastV = (a, f=0) => (a && a.length ? a.at(-1).v : f);
@@ -731,27 +758,64 @@ function levelKey(v){ const m={limited:"limited",fair:"adequate",adequate:"adequ
 function dayKey(v){ const m={stressful:"stressful",restored:"restored",normal:"normal",relaxed:"relaxed"};
   return v && m[String(v).toLowerCase()] ? m[String(v).toLowerCase()] : "normal"; }
 
-async function loadData() {
-  const qs = window.location.search;
-  // Telegram Login Widget params present? (id + hash)
-  const params = new URLSearchParams(qs);
-  if (!params.get("id") || !params.get("hash")) { render(); return; }
-  try {
-    const res = await fetch("/api/dashboard" + qs, { headers: { "Accept": "application/json" } });
-    if (!res.ok) throw new Error("auth " + res.status);
-    const api = await res.json();
-    if (!api.today || !(api.series && api.series.sleepScore && api.series.sleepScore.length)) throw new Error("no data");
-    SAMPLE = mapApiToState(api);
-    IS_DEMO = false;
-    if (api.language && I18N[api.language]) {
-      state.lang = api.language;
-      [...$("#langSeg").children].forEach(x=>x.setAttribute("aria-pressed", x.dataset.lang===api.language));
-    }
-  } catch (e) {
-    console.warn("[dashboard] falling back to demo:", e.message);
-    IS_DEMO = true;
+async function fetchDashboard(paramsObj) {
+  const qs = new URLSearchParams(paramsObj).toString();
+  const res = await fetch("/api/dashboard?" + qs, { headers: { "Accept": "application/json" } });
+  if (!res.ok) throw new Error("auth " + res.status);
+  const api = await res.json();
+  if (!api.today || !(api.series && api.series.sleepScore && api.series.sleepScore.length)) throw new Error("no data");
+  SAMPLE = mapApiToState(api);
+  IS_DEMO = false;
+  if (api.language && I18N[api.language]) {
+    state.lang = api.language;
+    [...$("#langSeg").children].forEach(x=>x.setAttribute("aria-pressed", x.dataset.lang===api.language));
   }
   render();
+}
+
+// Telegram Login Widget callback (must be global).
+window.onTelegramAuth = async (user) => {
+  try {
+    await fetchDashboard(user);
+  } catch (e) {
+    console.warn("[dashboard] login fetch failed:", e.message);
+    const L = I18N[state.lang];
+    alert(L.loginError || "Не удалось загрузить данные. Убедитесь, что вы подключили Oura в боте.");
+  }
+};
+
+const TG_BOT = "O_trackerbot"; // Telegram bot username (without @)
+function mountTelegramLogin() {
+  const c = $("#tgLoginBtn");
+  if (!c || c.dataset.mounted) return;
+  c.dataset.mounted = "1";
+  const s = document.createElement("script");
+  s.async = true;
+  s.src = "https://telegram.org/js/telegram-widget.js?22";
+  s.setAttribute("data-telegram-login", TG_BOT);
+  s.setAttribute("data-size", "medium");
+  s.setAttribute("data-userpic", "false");
+  s.setAttribute("data-onauth", "onTelegramAuth(user)");
+  s.setAttribute("data-request-access", "write");
+  c.appendChild(s);
+}
+
+async function loadData() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("id") && params.get("hash")) {
+    try {
+      const obj = {};
+      params.forEach((v, k) => (obj[k] = v));
+      await fetchDashboard(obj);
+      return;
+    } catch (e) {
+      console.warn("[dashboard] url-auth failed:", e.message);
+    }
+  }
+  // Not logged in → show demo + Telegram login button.
+  IS_DEMO = true;
+  render();
+  mountTelegramLogin();
 }
 
 loadData();
