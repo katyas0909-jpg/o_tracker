@@ -79,7 +79,7 @@ export async function ask(opts: AskOptions): Promise<AskResult> {
       config: {
         systemInstruction,
         temperature: 0.6,
-        maxOutputTokens: 700,
+        maxOutputTokens: 4096,
       },
     });
     const text = (res.text ?? "").trim();
@@ -109,7 +109,7 @@ export async function summaryObservation(userId: number, lang: Lang): Promise<st
       config: {
         systemInstruction: dataGroundedSystemPrompt(lang),
         temperature: 0.6,
-        maxOutputTokens: 160,
+        maxOutputTokens: 1024,
       },
     });
     const text = (res.text ?? "").trim();
