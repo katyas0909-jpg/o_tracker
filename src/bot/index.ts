@@ -2,7 +2,7 @@ import { Bot, InlineKeyboard, session, type Context, type SessionFlavor } from "
 import { DateTime } from "luxon";
 import { config } from "../config.js";
 import { prisma } from "../lib/db.js";
-import { randomToken } from "../lib/crypto.js";
+import { randomToken, encrypt } from "../lib/crypto.js";
 import { t, normalizeLang, LANG_LABELS, type Lang } from "../i18n/index.js";
 import { getOrCreateUser, getUserByTelegramId, setLanguage } from "../lib/users.js";
 import { ask, reserveQuota } from "../gemini/assistant.js";
@@ -175,6 +175,35 @@ export function createBot(): Bot<Ctx> {
     await ctx.reply(t(langOf(user), "help.text"), { parse_mode: "Markdown" });
   });
 
+  // ---- /setkey : let each user use their OWN Gemini key ----
+  bot.command("setkey", async (ctx) => {
+    const user = await getOrCreateUser(ctx.from!.id);
+    const lang = langOf(user);
+    const key = (ctx.message?.text ?? "").split(/\s+/).slice(1).join("").trim();
+
+    if (!key) {
+      await ctx.reply(setkeyText(lang, "howto"), { parse_mode: "Markdown", link_preview_options: { is_disabled: true } });
+      return;
+    }
+    // Basic sanity check on the key shape.
+    if (key.length < 20 || /\s/.test(key)) {
+      await ctx.reply(setkeyText(lang, "invalid"));
+      return;
+    }
+    await prisma.user.update({ where: { id: user.id }, data: { geminiKeyEnc: encrypt(key) } });
+    // Remove the message containing the key from the chat for safety.
+    await ctx.deleteMessage().catch(() => {});
+    await ctx.reply(setkeyText(lang, "saved"));
+  });
+
+  // ---- /removekey : go back to the shared key ----
+  bot.command("removekey", async (ctx) => {
+    const user = await getOrCreateUser(ctx.from!.id);
+    const lang = langOf(user);
+    await prisma.user.update({ where: { id: user.id }, data: { geminiKeyEnc: null } });
+    await ctx.reply(setkeyText(lang, "removed"));
+  });
+
   // ---- free text ----
   bot.on("message:text", async (ctx) => {
     const text = ctx.message.text.trim();
@@ -232,6 +261,34 @@ async function replyAsk(
   if (res.status === "error") return void ctx.reply(t(lang, "assistant.error"));
   const prefix = res.mode === "general" ? t(lang, "assistant.generalTag") + "\n\n" : "";
   await ctx.reply(prefix + res.text);
+}
+
+/** Hardcoded 3-language copy for the /setkey flow (kept out of the JSON files). */
+function setkeyText(lang: Lang, kind: "howto" | "saved" | "invalid" | "removed"): string {
+  const M: Record<Lang, Record<string, string>> = {
+    ru: {
+      howto:
+        "🔑 *Свой ключ Gemini*\n\nПо умолчанию ассистент работает на общем ключе. Хотите использовать свой личный (свой бесплатный лимит) — это по желанию:\n\n1. Откройте aistudio.google.com/app/apikey и войдите Google-аккаунтом\n2. Нажмите *Create API key*, скопируйте ключ (вида `AIza...`)\n3. Пришлите его сюда командой:\n`/setkey ВАШ_КЛЮЧ`\n\nВаш ключ хранится в зашифрованном виде, а сообщение с ним я сразу удаляю. Убрать свой ключ и вернуться на общий — /removekey",
+      saved: "Готово! Ваш ключ Gemini сохранён ✅ Теперь ассистент отвечает на вашем ключе. Убрать — /removekey",
+      invalid: "Это не похоже на ключ. Пришлите так: /setkey ВАШ_КЛЮЧ (ключ вида AIza..., без пробелов).",
+      removed: "Ваш ключ удалён. Ассистент снова использует общий ключ.",
+    },
+    en: {
+      howto:
+        "🔑 *Your own Gemini key*\n\nBy default the assistant uses a shared key. Using your own (your own free quota) is optional:\n\n1. Open aistudio.google.com/app/apikey and sign in with Google\n2. Tap *Create API key*, copy the key (looks like `AIza...`)\n3. Send it here as:\n`/setkey YOUR_KEY`\n\nYour key is stored encrypted and I delete the message with it right away. To remove it and go back to the shared key — /removekey",
+      saved: "Done! Your Gemini key is saved ✅ The assistant now uses your key. Remove it with /removekey",
+      invalid: "That doesn't look like a key. Send it as: /setkey YOUR_KEY (looks like AIza..., no spaces).",
+      removed: "Your key was removed. The assistant uses the shared key again.",
+    },
+    pt: {
+      howto:
+        "🔑 *A tua própria chave Gemini*\n\nPor defeito o assistente usa uma chave partilhada. Usar a tua (o teu limite gratuito) é opcional:\n\n1. Abre aistudio.google.com/app/apikey e entra com o Google\n2. Toca em *Create API key*, copia a chave (tipo `AIza...`)\n3. Envia-a aqui como:\n`/setkey A_TUA_CHAVE`\n\nA tua chave é guardada encriptada e apago logo a mensagem com ela. Para remover e voltar à chave partilhada — /removekey",
+      saved: "Pronto! A tua chave Gemini foi guardada ✅ O assistente usa agora a tua chave. Remover com /removekey",
+      invalid: "Isto não parece uma chave. Envia como: /setkey A_TUA_CHAVE (tipo AIza..., sem espaços).",
+      removed: "A tua chave foi removida. O assistente volta a usar a chave partilhada.",
+    },
+  };
+  return M[lang][kind] ?? M.ru[kind]!;
 }
 
 function settingsText(lang: Lang, user: { language: Lang; timezone: string; summaryHour: number; generalHealthMode: boolean }): string {
