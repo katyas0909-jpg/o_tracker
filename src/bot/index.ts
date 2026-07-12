@@ -32,6 +32,24 @@ async function createConnectLink(userId: number): Promise<string> {
 
 export function createBot(): Bot<Ctx> {
   const bot = new Bot<Ctx>(config.TELEGRAM_BOT_TOKEN);
+
+  // Idempotency guard: on the free tier the server sleeps and Telegram retries
+  // the same update while it wakes, which would answer one question several
+  // times. Skip any update_id we've already handled.
+  const processedUpdates = new Set<number>();
+  bot.use(async (ctx, next) => {
+    const id = ctx.update.update_id;
+    if (processedUpdates.has(id)) return; // duplicate/retried delivery — ignore
+    processedUpdates.add(id);
+    if (processedUpdates.size > 2000) {
+      for (const v of processedUpdates) {
+        processedUpdates.delete(v);
+        if (processedUpdates.size <= 1000) break;
+      }
+    }
+    await next();
+  });
+
   bot.use(session({ initial: (): SessionData => ({}) }));
 
   const langOf = (u: { language: Lang } | null): Lang => normalizeLang(u?.language);
