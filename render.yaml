@@ -5,7 +5,7 @@ services:
   - type: web
     name: o-tracker
     runtime: node
-    plan: starter # free tier sleeps after 15 min; Starter (~$7/mo) keeps webhooks responsive
+    plan: free # free tier sleeps after 15 min; Starter (~$7/mo) keeps webhooks responsive
     buildCommand: npm install && npm run build && npx prisma migrate deploy
     startCommand: npm start
     healthCheckPath: /healthz
@@ -41,4 +41,4 @@ services:
 
 databases:
   - name: o-tracker-db
-    plan: basic-256mb # managed Postgres (~$6-7/mo)
+    plan: free # managed Postgres (~$6-7/mo)
