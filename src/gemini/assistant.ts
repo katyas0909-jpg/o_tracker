@@ -2,6 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 import { DateTime } from "luxon";
 import { config } from "../config.js";
 import { prisma } from "../lib/db.js";
+import { decrypt } from "../lib/crypto.js";
 import type { Lang } from "../i18n/index.js";
 import { buildMetricContext, contextToJson } from "./context.js";
 import {
@@ -10,7 +11,24 @@ import {
   buildUserContext,
 } from "./prompts.js";
 
-const ai = new GoogleGenAI({ apiKey: config.GEMINI_API_KEY });
+// Shared owner key (fallback for users who haven't set their own).
+const sharedAi = new GoogleGenAI({ apiKey: config.GEMINI_API_KEY });
+
+/** Return a Gemini client using the user's own key if set, else the shared key. */
+async function clientForUser(userId: number): Promise<GoogleGenAI> {
+  const u = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { geminiKeyEnc: true },
+  });
+  if (u?.geminiKeyEnc) {
+    try {
+      return new GoogleGenAI({ apiKey: decrypt(u.geminiKeyEnc) });
+    } catch {
+      /* fall back to shared on decrypt error */
+    }
+  }
+  return sharedAi;
+}
 
 export type AskMode = "data" | "general";
 
@@ -73,12 +91,15 @@ export async function ask(opts: AskOptions): Promise<AskResult> {
   }
 
   try {
+    const ai = await clientForUser(userId);
     const res = await ai.models.generateContent({
       model: config.GEMINI_MODEL,
       contents,
       config: {
         systemInstruction,
         temperature: 0.6,
+        // High cap because "thinking" models spend part of this budget on internal
+        // reasoning; a low cap truncates the visible answer mid-sentence.
         maxOutputTokens: 4096,
       },
     });
@@ -100,6 +121,7 @@ export async function summaryObservation(userId: number, lang: Lang): Promise<st
   const ctx = await buildMetricContext(userId, config.METRIC_CONTEXT_DAYS);
   if (ctx.length === 0) return null;
   try {
+    const ai = await clientForUser(userId);
     const res = await ai.models.generateContent({
       model: config.GEMINI_MODEL,
       contents:
