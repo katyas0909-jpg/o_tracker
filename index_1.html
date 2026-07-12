@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="navy">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>O Tracker</title>
+<style>
+  /* ===== DEFAULT THEME: DARK BLUE (navy) ===== */
+  :root {
+    --page:        #070d1c;   /* deep navy page plane */
+    --surface-1:   #0f1a33;   /* card surface */
+    --surface-2:   #14213f;
+    --surface-3:   #1b2b4f;   /* chips / segmented bg */
+    --text-primary:#eef3fc;
+    --text-secondary:#aebbd6;
+    --muted:       #6d7c9e;
+    --grid:        #223256;
+    --baseline:    #2c3f68;
+    --border:      rgba(140,170,225,0.16);
+    --series-1:    #57a5ff;   /* accent blue on navy (>=3:1) */
+    --series-1-100:#152a4d;   /* faint fill */
+    --series-1-200:#24467e;
+    --good:        #35d07f;
+    --good-ink:    #56de95;
+    --warning:     #f5b83d;
+    --serious:     #f2895b;
+    --shadow:      0 1px 2px rgba(0,0,0,0.45), 0 8px 30px rgba(4,10,26,0.55);
+    --radius:      16px;
+    --glow:        0 0 0 1px rgba(87,165,255,0.10);
+    --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  html[data-theme="dark"], html[data-theme="navy"] {
+    --page:#070d1c; --surface-1:#0f1a33; --surface-2:#14213f; --surface-3:#1b2b4f;
+    --text-primary:#eef3fc; --text-secondary:#aebbd6; --muted:#6d7c9e;
+    --grid:#223256; --baseline:#2c3f68; --border:rgba(140,170,225,0.16);
+    --series-1:#57a5ff; --series-1-100:#152a4d; --series-1-200:#24467e;
+    --good:#35d07f; --good-ink:#56de95; --warning:#f5b83d; --serious:#f2895b;
+    --shadow:0 1px 2px rgba(0,0,0,0.45), 0 8px 30px rgba(4,10,26,0.55);
+  }
+  /* optional light theme via toggle */
+  html[data-theme="light"] {
+      --page:#eef2f9; --surface-1:#ffffff; --surface-2:#f4f7fc; --surface-3:#eaf0fa;
+      --text-primary:#0b1220; --text-secondary:#465372; --muted:#7a879f;
+      --grid:#dbe3f0; --baseline:#c3cde0; --border:rgba(20,40,80,0.12);
+      --series-1:#2a6ff0; --series-1-100:#dce8ff; --series-1-200:#9bc0ff;
+      --good:#0a9e4a; --good-ink:#067a38; --warning:#b57d00; --serious:#c1552b;
+      --shadow:0 1px 2px rgba(20,40,80,0.05), 0 6px 20px rgba(20,40,80,0.08);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; color: var(--text-primary);
+    font-family: var(--font); font-size: 15px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    background:
+      radial-gradient(1100px 600px at 78% -8%, rgba(87,165,255,0.14), transparent 60%),
+      radial-gradient(900px 520px at 8% 4%, rgba(46,92,180,0.12), transparent 55%),
+      var(--page);
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+  html[data-theme="light"] body {
+    background:
+      radial-gradient(1000px 560px at 80% -10%, rgba(42,111,240,0.10), transparent 60%),
+      var(--page);
+    background-attachment: fixed;
+  }
+  a { color: var(--series-1); }
+
+  /* ---- top bar ---- */
+  .topbar {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--page) 82%, transparent);
+    backdrop-filter: saturate(160%) blur(12px);
+    -webkit-backdrop-filter: saturate(160%) blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  .topbar-inner {
+    max-width: 940px; margin: 0 auto; padding: 12px 18px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .brand { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 17px; letter-spacing: -0.01em; }
+  .brand .mark {
+    width: 26px; height: 26px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--series-1), var(--series-1-200));
+    display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 15px;
+  }
+  .spacer { flex: 1; }
+  .seg {
+    display: inline-flex; background: var(--surface-3); border: 1px solid var(--border);
+    border-radius: 10px; padding: 2px; gap: 2px;
+  }
+  .seg button {
+    border: 0; background: transparent; color: var(--text-secondary);
+    font: inherit; font-size: 13px; font-weight: 600; padding: 5px 10px;
+    border-radius: 8px; cursor: pointer; transition: background .12s, color .12s;
+  }
+  .seg button[aria-pressed="true"] { background: var(--series-1); color: #06122b; }
+  html[data-theme="light"] .seg button[aria-pressed="true"] { color: #fff; }
+  .icon-btn {
+    border: 1px solid var(--border); background: var(--surface-3); color: var(--text-secondary);
+    width: 34px; height: 34px; border-radius: 9px; cursor: pointer; font-size: 15px;
+    display: grid; place-items: center;
+  }
+
+  main { max-width: 940px; margin: 0 auto; padding: 20px 18px 60px; }
+
+  .greeting { margin: 6px 2px 18px; }
+  .greeting h1 { font-size: 22px; margin: 0 0 2px; letter-spacing: -0.02em; }
+  .greeting .date { color: var(--muted); font-size: 14px; }
+
+  .loginbar {
+    display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 14px 18px; margin-bottom: 16px;
+  }
+  .loginbar-txt strong { display: block; font-size: 15px; }
+  .loginbar-txt span { color: var(--text-secondary); font-size: 13px; }
+  .tg-login { min-height: 40px; display: flex; align-items: center; }
+
+  /* ---- today hero ---- */
+  .today {
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 20px; margin-bottom: 16px;
+  }
+  .today-rings { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .ring-card { text-align: center; padding: 6px 4px; }
+  .ring-wrap { position: relative; width: 108px; height: 108px; margin: 0 auto 6px; }
+  .ring-wrap .val {
+    position: absolute; inset: 0; display: grid; place-items: center;
+    font-size: 26px; font-weight: 700; letter-spacing: -0.02em;
+  }
+  .ring-label { font-size: 13px; color: var(--text-secondary); font-weight: 600; }
+  .ring-state { font-size: 12px; margin-top: 2px; font-weight: 600; }
+  .st-good { color: var(--good-ink); } .st-warn { color: var(--warning); } .st-low { color: var(--serious); }
+
+  .insight {
+    margin-top: 16px; padding: 13px 15px; border-radius: 12px;
+    background: var(--surface-2); border: 1px solid var(--border);
+    /* subtle navy inset */
+    display: flex; gap: 11px; align-items: flex-start; font-size: 14px;
+  }
+  .insight .bulb {
+    flex: none; width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center;
+    background: var(--series-1-100); color: var(--series-1); font-size: 15px;
+  }
+  .insight .src { color: var(--muted); font-size: 12px; display: block; margin-top: 3px; }
+
+  /* ---- metric grid ---- */
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .card {
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 18px; display: flex; flex-direction: column;
+  }
+  .card-head { display: flex; align-items: center; gap: 9px; margin-bottom: 12px; }
+  .card-head .ic {
+    width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center;
+    background: var(--series-1-100); color: var(--series-1); font-size: 16px; flex: none;
+  }
+  .card-head h3 { font-size: 15px; margin: 0; font-weight: 700; letter-spacing: -0.01em; }
+  .card-head .big { margin-left: auto; font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
+  .card-head .big small { font-size: 13px; color: var(--muted); font-weight: 600; margin-left: 2px; }
+
+  .stats { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-bottom: 12px; }
+  .stat { min-width: 0; }
+  .stat .k { font-size: 12px; color: var(--muted); }
+  .stat .v { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  .explain { font-size: 13px; color: var(--text-secondary); margin: 0 0 14px; }
+
+  .trend { margin-top: auto; }
+  .trend svg { display: block; width: 100%; height: 72px; overflow: visible; }
+  .trend-foot { display: flex; justify-content: space-between; color: var(--muted); font-size: 11px; margin-top: 4px; }
+
+  .tooltip {
+    position: fixed; pointer-events: none; z-index: 50; opacity: 0; transform: translateY(-4px);
+    transition: opacity .08s; background: var(--surface-1); color: var(--text-primary);
+    border: 1px solid var(--border); box-shadow: var(--shadow); border-radius: 9px;
+    padding: 7px 10px; font-size: 12px; white-space: nowrap;
+  }
+  .tooltip .tt-d { color: var(--muted); font-size: 11px; }
+  .tooltip .tt-v { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 30px; }
+  .foot-links { margin-top: 16px; }
+  .foot-links a { color: var(--muted); }
+  .feedback-btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: var(--series-1); color: #06122b; text-decoration: none;
+    font-size: 14px; font-weight: 600; padding: 10px 20px; border-radius: 11px;
+    box-shadow: var(--shadow); transition: transform .1s, filter .1s;
+  }
+  html[data-theme="light"] .feedback-btn { color: #fff; }
+  .feedback-btn:hover { filter: brightness(1.05); transform: translateY(-1px); }
+
+  .demo-flag {
+    display: inline-block; font-size: 11px; font-weight: 600; color: var(--warning);
+    border: 1px solid var(--border); border-radius: 999px; padding: 2px 9px; margin-left: 8px; vertical-align: middle;
+  }
+
+  @media (max-width: 720px) {
+    .grid { grid-template-columns: 1fr; }
+    .today-rings { grid-template-columns: repeat(3, 1fr); }
+    .ring-wrap { width: 92px; height: 92px; }
+    .ring-wrap .val { font-size: 22px; }
+    .brand span.name { display: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand"><span class="mark">O</span><span class="name">O Tracker</span></div>
+      <span class="demo-flag" id="demoFlag">demo</span>
+      <div class="spacer"></div>
+      <div class="seg" id="rangeSeg" role="group" aria-label="range">
+        <button data-range="7" aria-pressed="true">7</button>
+        <button data-range="30" aria-pressed="false">30</button>
+      </div>
+      <div class="seg" id="langSeg" role="group" aria-label="language">
+        <button data-lang="ru" aria-pressed="true">RU</button>
+        <button data-lang="en" aria-pressed="false">EN</button>
+        <button data-lang="pt" aria-pressed="false">PT</button>
+      </div>
+      <button class="icon-btn" id="themeBtn" title="theme" aria-label="theme">◐</button>
+    </div>
+  </div>
+
+  <main>
+    <div class="greeting">
+      <h1 id="gGreet">Доброе утро</h1>
+      <div class="date" id="gDate">—</div>
+    </div>
+
+    <div class="loginbar" id="loginBar" style="display:none">
+      <div class="loginbar-txt">
+        <strong id="loginTitle">Показаны примерные данные</strong>
+        <span id="loginSub">Войдите через Telegram, чтобы увидеть свои</span>
+      </div>
+      <div id="tgLoginBtn" class="tg-login"></div>
+    </div>
+
+    <section class="today">
+      <div class="today-rings" id="todayRings"></div>
+      <div class="insight" id="insightBox">
+        <div class="bulb">✦</div>
+        <div>
+          <span id="insightText">—</span>
+          <span class="src" id="insightSrc">O Tracker · на основе ваших данных</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="grid" id="metricGrid"></div>
+
+    <footer>
+      <a class="feedback-btn" id="feedbackBtn"
+         href="mailto:katyas0909@gmail.com?subject=O%20Tracker%20%E2%80%94%20feedback">💬 Оставить отзыв для Kate</a>
+      <div class="foot-links">
+        <span id="footText">O Tracker — независимый ассистент для данных Oura Ring.</span><br>
+        <a href="/privacy" id="footPriv">Политика конфиденциальности</a> ·
+        <a href="/terms" id="footTerms">Условия</a>
+      </div>
+    </footer>
+  </main>
+
+  <div class="tooltip" id="tooltip"></div>
+
+<script type="module">
+/* ============================================================
+   O Tracker dashboard — standalone demo view.
+   In production, replace SAMPLE with data fetched from
+   GET /api/dashboard (see backend). Markup + i18n are identical.
+   ============================================================ */
+
+/* ---------- i18n ---------- */
+const I18N = {
+  ru: {
+    greetMorning: "Доброе утро", greetDay: "Добрый день", greetEvening: "Добрый вечер",
+    demo: "демо",
+    insightSrc: "O Tracker · на основе ваших данных",
+    loginTitle: "Показаны примерные данные", loginSub: "Войдите через Telegram, чтобы увидеть свои",
+    loginError: "Не удалось загрузить данные. Убедитесь, что вы подключили Oura в боте (/connect).",
+    feedback: "💬 Оставить отзыв для Kate",
+    foot: "O Tracker — независимый ассистент для данных Oura Ring.",
+    footPriv: "Политика конфиденциальности", footTerms: "Условия",
+    stateGood: "оптимально", stateWarn: "хорошо", stateLow: "обратите внимание",
+    ring: { sleep: "Сон", readiness: "Готовность", activity: "Активность" },
+    sleep: { title: "Сон", explain: "Общий сон {dur} (в постели {inbed}), эффективность {eff}%. Засыпание {latency}, дыхание {resp}/мин. Глубокий и REM в норме.",
+      k: { dur: "Общий сон", inbed: "В постели", eff: "Эффективность", latency: "Засыпание", deep: "Глубокий", rem: "REM", light: "Лёгкий", awake: "Бодрствование", restful: "Спокойствие", resp: "Дыхание", hr: "Пульс во сне", hrv: "HRV во сне", bedtime: "Отбой", waketime: "Подъём" } },
+    readiness: { title: "Готовность", explain: "Организм восстановился. Пульс покоя {rhr}, HRV {hrv} мс, индекс восстановления {ri}. Можно планировать нагрузку.",
+      k: { rhr: "Пульс покоя", hrv: "HRV", temp: "Температура", recovery: "Восстановление", ri: "Индекс восст.", sb: "Баланс сна", hb: "Баланс HRV" } },
+    activity: { title: "Активность", explain: "{steps} шагов из {stepsTarget}, {cal} ккал активных, {distance} км. До цели {rest} — короткая прогулка закроет день.",
+      k: { steps: "Шаги", stepsTarget: "Цель шагов", cal: "Актив. ккал", totalCal: "Всего ккал", target: "Цель ккал", distance: "Дистанция", met: "MET-минуты", sedentary: "Сидя", low: "Низкая", medium: "Средняя", high: "Высокая", train: "Нагрузка" } },
+    hr: { title: "Пульс и HRV", explain: "Пульс покоя {rhr} уд/мин, средний HRV {hrv} мс, дневной пульс {avg}. Показатели стабильны.",
+      k: { rhr: "Пульс покоя", hrv: "Средний HRV", avg: "Дневной пульс", max: "Макс. пульс" } },
+    temp: { title: "Температура тела", explain: "Отклонение {dev}°C от вашей нормы (тренд {trend}°C) — в пределах обычного, признаков недомогания нет.",
+      k: { dev: "Отклонение", trend: "Тренд" } },
+    stress: { title: "Стресс и Resilience", explain: "{high} стресса днём, {rec} восстановления. День: {day}. Устойчивость: {res}.",
+      k: { high: "Высокий стресс", rec: "Восстановление", res: "Resilience", day: "Итог дня" } },
+    spo2: { title: "SpO₂ и дыхание", explain: "Средний SpO₂ {avg}%, индекс нарушений дыхания {bdi}, частота дыхания {resp}/мин — в норме.",
+      k: { avg: "Средний SpO₂", bdi: "Наруш. дыхания", resp: "Частота дыхания" } },
+    cardio: { title: "Сердце: возраст и VO₂", explain: "Сердечно-сосудистый возраст {age} лет, VO₂ max {vo2} мл/кг/мин — выше среднего для вашего возраста.",
+      k: { age: "ССС-возраст", vo2: "VO₂ max" } },
+    resLevels: { limited: "ограниченная", adequate: "достаточная", solid: "уверенная", strong: "высокая", exceptional: "исключительная" },
+    dayLevels: { stressful: "напряжённый", restored: "восстановительный", normal: "обычный", relaxed: "спокойный" },
+    units: { min: "мин", ms: "мс", bpm: "уд/мин", kcal: "ккал", km: "км", yr: "лет" },
+    insights: [
+      "Скор сна вырос на 6 пунктов за неделю — вы стабильнее ложитесь до полуночи. Сегодня хороший день для тренировки.",
+      "HRV держится выше вашего среднего третий день подряд: восстановление идёт отлично.",
+    ],
+  },
+  en: {
+    greetMorning: "Good morning", greetDay: "Good afternoon", greetEvening: "Good evening",
+    demo: "demo",
+    insightSrc: "O Tracker · based on your data",
+    loginTitle: "Showing example data", loginSub: "Log in with Telegram to see yours",
+    loginError: "Couldn't load your data. Make sure you connected Oura in the bot (/connect).",
+    feedback: "💬 Leave feedback for Kate",
+    foot: "O Tracker — an independent assistant for your Oura Ring data.",
+    footPriv: "Privacy Policy", footTerms: "Terms",
+    stateGood: "optimal", stateWarn: "good", stateLow: "pay attention",
+    ring: { sleep: "Sleep", readiness: "Readiness", activity: "Activity" },
+    sleep: { title: "Sleep", explain: "Total sleep {dur} (in bed {inbed}), efficiency {eff}%. Latency {latency}, breathing {resp}/min. Deep and REM look healthy.",
+      k: { dur: "Total sleep", inbed: "In bed", eff: "Efficiency", latency: "Latency", deep: "Deep", rem: "REM", light: "Light", awake: "Awake", restful: "Restfulness", resp: "Breathing", hr: "Sleeping HR", hrv: "Sleep HRV", bedtime: "Bedtime", waketime: "Wake-up" } },
+    readiness: { title: "Readiness", explain: "You are recovered. Resting HR {rhr}, HRV {hrv} ms, recovery index {ri}. Good to plan a load today.",
+      k: { rhr: "Resting HR", hrv: "HRV", temp: "Temperature", recovery: "Recovery", ri: "Recovery index", sb: "Sleep balance", hb: "HRV balance" } },
+    activity: { title: "Activity", explain: "{steps} of {stepsTarget} steps, {cal} active kcal, {distance} km. {rest} to goal — a short walk closes the day.",
+      k: { steps: "Steps", stepsTarget: "Step goal", cal: "Active kcal", totalCal: "Total kcal", target: "Cal goal", distance: "Distance", met: "MET minutes", sedentary: "Sedentary", low: "Low", medium: "Medium", high: "High", train: "Load" } },
+    hr: { title: "Heart & HRV", explain: "Resting HR {rhr} bpm, average HRV {hrv} ms, daytime HR {avg}. Stable over the last few days.",
+      k: { rhr: "Resting HR", hrv: "Average HRV", avg: "Daytime HR", max: "Max HR" } },
+    temp: { title: "Body Temperature", explain: "Deviation {dev}°C from baseline (trend {trend}°C) — within normal range, no signs of illness.",
+      k: { dev: "Deviation", trend: "Trend" } },
+    stress: { title: "Stress & Resilience", explain: "{high} of daytime stress, {rec} of recovery. Day: {day}. Resilience: {res}.",
+      k: { high: "High stress", rec: "Recovery", res: "Resilience", day: "Day summary" } },
+    spo2: { title: "SpO₂ & Breathing", explain: "Average SpO₂ {avg}%, breathing disturbance index {bdi}, respiratory rate {resp}/min — all normal.",
+      k: { avg: "Average SpO₂", bdi: "Breathing disturb.", resp: "Respiratory rate" } },
+    cardio: { title: "Heart: Age & VO₂", explain: "Cardiovascular age {age} yrs, VO₂ max {vo2} ml/kg/min — above average for your age.",
+      k: { age: "Cardio age", vo2: "VO₂ max" } },
+    resLevels: { limited: "limited", adequate: "adequate", solid: "solid", strong: "strong", exceptional: "exceptional" },
+    dayLevels: { stressful: "stressful", restored: "restored", normal: "normal", relaxed: "relaxed" },
+    units: { min: "min", ms: "ms", bpm: "bpm", kcal: "kcal", km: "km", yr: "yrs" },
+    insights: [
+      "Your sleep score is up 6 points this week — bedtimes are landing before midnight. A good day to train.",
+      "HRV has stayed above your average for three days running: recovery is going great.",
+    ],
+  },
+  pt: {
+    greetMorning: "Bom dia", greetDay: "Boa tarde", greetEvening: "Boa noite",
+    demo: "demo",
+    insightSrc: "O Tracker · com base nos seus dados",
+    loginTitle: "A mostrar dados de exemplo", loginSub: "Entre com o Telegram para ver os seus",
+    loginError: "Não foi possível carregar os seus dados. Confirme que ligou o Oura no bot (/connect).",
+    feedback: "💬 Deixar feedback para a Kate",
+    foot: "O Tracker — um assistente independente para os dados do seu Oura Ring.",
+    footPriv: "Política de Privacidade", footTerms: "Termos",
+    stateGood: "ótimo", stateWarn: "bom", stateLow: "atenção",
+    ring: { sleep: "Sono", readiness: "Prontidão", activity: "Atividade" },
+    sleep: { title: "Sono", explain: "Sono total {dur} (na cama {inbed}), eficiência {eff}%. Latência {latency}, respiração {resp}/min. Profundo e REM saudáveis.",
+      k: { dur: "Sono total", inbed: "Na cama", eff: "Eficiência", latency: "Latência", deep: "Profundo", rem: "REM", light: "Leve", awake: "Acordado", restful: "Tranquilidade", resp: "Respiração", hr: "FC no sono", hrv: "HRV no sono", bedtime: "Deitar", waketime: "Acordar" } },
+    readiness: { title: "Prontidão", explain: "Você está recuperado. FC de repouso {rhr}, HRV {hrv} ms, índice de recuperação {ri}. Pode planear carga hoje.",
+      k: { rhr: "FC de repouso", hrv: "HRV", temp: "Temperatura", recovery: "Recuperação", ri: "Índice recup.", sb: "Balanço do sono", hb: "Balanço HRV" } },
+    activity: { title: "Atividade", explain: "{steps} de {stepsTarget} passos, {cal} kcal ativas, {distance} km. Faltam {rest} para a meta — uma caminhada resolve.",
+      k: { steps: "Passos", stepsTarget: "Meta passos", cal: "Kcal ativas", totalCal: "Kcal totais", target: "Meta kcal", distance: "Distância", met: "Minutos MET", sedentary: "Sedentário", low: "Baixa", medium: "Média", high: "Alta", train: "Carga" } },
+    hr: { title: "Frequência & HRV", explain: "FC de repouso {rhr} bpm, HRV médio {hrv} ms, FC diurna {avg}. Estável nos últimos dias.",
+      k: { rhr: "FC de repouso", hrv: "HRV médio", avg: "FC diurna", max: "FC máx." } },
+    temp: { title: "Temperatura Corporal", explain: "Desvio de {dev}°C da base (tendência {trend}°C) — dentro do normal, sem sinais de doença.",
+      k: { dev: "Desvio", trend: "Tendência" } },
+    stress: { title: "Stress & Resiliência", explain: "{high} de stress diurno, {rec} de recuperação. Dia: {day}. Resiliência: {res}.",
+      k: { high: "Stress alto", rec: "Recuperação", res: "Resiliência", day: "Resumo do dia" } },
+    spo2: { title: "SpO₂ & Respiração", explain: "SpO₂ médio {avg}%, índice de perturbação respiratória {bdi}, frequência respiratória {resp}/min — normal.",
+      k: { avg: "SpO₂ médio", bdi: "Perturb. respir.", resp: "Freq. respiratória" } },
+    cardio: { title: "Coração: Idade & VO₂", explain: "Idade cardiovascular {age} anos, VO₂ max {vo2} ml/kg/min — acima da média para a sua idade.",
+      k: { age: "Idade CV", vo2: "VO₂ max" } },
+    resLevels: { limited: "limitada", adequate: "adequada", solid: "sólida", strong: "forte", exceptional: "excecional" },
+    dayLevels: { stressful: "stressante", restored: "restaurador", normal: "normal", relaxed: "relaxado" },
+    units: { min: "min", ms: "ms", bpm: "bpm", kcal: "kcal", km: "km", yr: "anos" },
+    insights: [
+      "O seu score de sono subiu 6 pontos esta semana — está a deitar-se antes da meia-noite. Bom dia para treinar.",
+      "O HRV manteve-se acima da sua média por três dias seguidos: a recuperação vai muito bem.",
+    ],
+  },
+};
+
+/* ---------- sample data (30 days, deterministic-ish) ---------- */
+function buildSample() {
+  const days = 30;
+  const today = new Date();
+  const mk = (base, amp, drift, noiseSeed) => {
+    const arr = [];
+    for (let i = days - 1; i >= 0; i--) {
+      const t = (days - 1 - i);
+      const wave = Math.sin((t / 6) + noiseSeed) * amp;
+      const dr = drift * (t / days);
+      const n = ((Math.sin(t * 12.9898 + noiseSeed * 78.233) * 43758.5453) % 1) * amp * 0.5;
+      const d = new Date(today); d.setDate(today.getDate() - i);
+      arr.push({ date: d, v: Math.round((base + wave + dr + n) * 10) / 10 });
+    }
+    return arr;
+  };
+  return {
+    date: today,
+    sleepScore: mk(78, 7, 6, 1),
+    readiness:  mk(80, 6, 4, 2),
+    activity:   mk(74, 9, 2, 3),
+    hrv:        mk(52, 8, 5, 4),
+    rhr:        mk(56, 3, -2, 5),
+    temp:       mk(0.1, 0.25, 0, 6),
+    stress:     mk(64, 10, -3, 7), // resilience score
+    steps:      mk(8200, 2200, 600, 8),
+    spo2:       mk(97, 0.7, 0, 9),
+    vo2:        mk(45.5, 1.2, 1.5, 10),
+    today: {
+      sleep: { dur: 452, inbed: 496, eff: 91, latency: 12, deep: 78, rem: 96, light: 278, awake: 44, restful: 84, resp: 14.2, hr: 54, hrv: 54, bedtime: "23:48", waketime: "07:24" },
+      readiness: { rhr: 55, hrv: 54, temp: 0.1, recovery: "solid", ri: 92, sb: 88, hb: 79 },
+      activity: { steps: 8420, stepsTarget: 9000, cal: 512, totalCal: 2380, target: 500, distance: 6.1, met: 340, sedentary: 540, low: 210, medium: 62, high: 8, rest: 88 },
+      hr: { rhr: 55, hrv: 52, avg: 68, max: 148 },
+      temp: { dev: 0.1, trend: 0.05 },
+      stress: { high: 100, rec: 190, res: "solid", day: "normal" }, // minutes
+      spo2: { avg: 97.4, bdi: 1.2, resp: 14.2 },
+      cardio: { age: 32, vo2: 46.5 },
+    }
+  };
+}
+let SAMPLE = buildSample();
+let IS_DEMO = true;
+
+/* ---------- state ---------- */
+let state = { lang: "ru", range: 7, theme: "auto" };
+
+/* ---------- helpers ---------- */
+const $ = (s, r=document) => r.querySelector(s);
+function fmtDur(min, L) {
+  const h = Math.floor(min/60), m = Math.round(min%60);
+  return h > 0 ? `${h}ч ${m}${L.units.min}`.replace("ч", state.lang==="ru"?"ч":"h") : `${m} ${L.units.min}`;
+}
+function durHM(min) { const h=Math.floor(min/60), m=Math.round(min%60); return {h,m}; }
+function fmtDuration(min) {
+  const {h,m} = durHM(min);
+  if (state.lang === "ru") return h>0 ? `${h}ч ${m}м` : `${m}м`;
+  return h>0 ? `${h}h ${String(m).padStart(2,"0")}m` : `${m}m`;
+}
+function tmpl(str, obj) { return str.replace(/\{(\w+)\}/g, (_,k)=> (obj[k] ?? "")); }
+function scoreState(v) { return v >= 85 ? "good" : v >= 70 ? "warn" : "low"; }
+function nf(n) { if (n === null || n === undefined) return "—"; return new Intl.NumberFormat(state.lang === "en" ? "en-US" : state.lang === "pt" ? "pt-PT" : "ru-RU").format(n); }
+
+/* ---------- SVG ring gauge ---------- */
+function ring(value, label, L) {
+  const st = scoreState(value);
+  const color = st === "good" ? "var(--good)" : st === "warn" ? "var(--warning)" : "var(--serious)";
+  const stCls = st === "good" ? "st-good" : st === "warn" ? "st-warn" : "st-low";
+  const stTxt = st === "good" ? L.stateGood : st === "warn" ? L.stateWarn : L.stateLow;
+  const r = 46, c = 2 * Math.PI * r, off = c * (1 - value/100);
+  return `<div class="ring-card">
+    <div class="ring-wrap">
+      <svg viewBox="0 0 108 108" width="108" height="108" aria-hidden="true">
+        <circle cx="54" cy="54" r="${r}" fill="none" stroke="var(--grid)" stroke-width="9"/>
+        <circle cx="54" cy="54" r="${r}" fill="none" stroke="${color}" stroke-width="9"
+          stroke-linecap="round" stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}"
+          transform="rotate(-90 54 54)"/>
+      </svg>
+      <div class="val">${Math.round(value)}</div>
+    </div>
+    <div class="ring-label">${label}</div>
+    <div class="ring-state ${stCls}">${stTxt}</div>
+  </div>`;
+}
+
+/* ---------- SVG trend chart with hover ---------- */
+let charts = []; // {el, points, series, fmt}
+function trendSVG(series, opts={}) {
+  const W = 300, H = 72, padY = 8;
+  const data = (series||[]).slice(-state.range);
+  if (data.length < 2) {
+    return { svg: `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img"></svg>`, pts: [], fmt: opts.fmt || (v=>v) };
+  }
+  const vals = data.map(d=>d.v);
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const span = (max - min) || 1;
+  const x = i => (i/(data.length-1)) * W;
+  const y = v => H - padY - ((v - min)/span) * (H - padY*2);
+  let line = "", area = "";
+  data.forEach((d,i)=>{ const px=x(i), py=y(d.v); line += (i? "L":"M")+px.toFixed(1)+" "+py.toFixed(1)+" "; });
+  area = `M0 ${H} ` + data.map((d,i)=>`L${x(i).toFixed(1)} ${y(d.v).toFixed(1)}`).join(" ") + ` L${W} ${H} Z`;
+  const gid = "g"+Math.random().toString(36).slice(2,8);
+  const pts = data.map((d,i)=>({px:x(i), py:y(d.v), d}));
+  const last = pts[pts.length-1];
+  const svg = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img">
+    <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="var(--series-1)" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="var(--series-1)" stop-opacity="0"/>
+    </linearGradient></defs>
+    <path d="${area}" fill="url(#${gid})"/>
+    <path d="${line}" fill="none" stroke="var(--series-1)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+    <circle cx="${last.px.toFixed(1)}" cy="${last.py.toFixed(1)}" r="3.2" fill="var(--series-1)" stroke="var(--surface-1)" stroke-width="1.5"/>
+    <line class="cx" x1="0" y1="0" x2="0" y2="${H}" stroke="var(--baseline)" stroke-width="1" vector-effect="non-scaling-stroke" style="opacity:0"/>
+    <circle class="cxdot" r="4" fill="var(--series-1)" stroke="var(--surface-1)" stroke-width="1.5" style="opacity:0"/>
+    <rect x="0" y="0" width="${W}" height="${H}" fill="transparent" style="cursor:crosshair"/>
+  </svg>`;
+  return { svg, pts, fmt: opts.fmt || (v=>v) };
+}
+
+function attachHover(container, chart) {
+  const svg = container.querySelector("svg");
+  const cx = svg.querySelector(".cx"), dot = svg.querySelector(".cxdot");
+  if (!cx || !dot || !chart.pts || !chart.pts.length) return;
+  const tip = $("#tooltip");
+  const L = I18N[state.lang];
+  const locale = state.lang==="en"?"en-US":state.lang==="pt"?"pt-PT":"ru-RU";
+  svg.addEventListener("pointermove", (e)=>{
+    const rect = svg.getBoundingClientRect();
+    const rx = (e.clientX - rect.left)/rect.width * 300;
+    let nearest = chart.pts[0], nd = Infinity;
+    chart.pts.forEach(p=>{ const d=Math.abs(p.px-rx); if(d<nd){nd=d;nearest=p;} });
+    cx.style.opacity=1; cx.setAttribute("x1", nearest.px); cx.setAttribute("x2", nearest.px);
+    dot.style.opacity=1; dot.setAttribute("cx", nearest.px); dot.setAttribute("cy", nearest.py);
+    const ds = nearest.d.date.toLocaleDateString(locale, {day:"numeric", month:"short"});
+    tip.innerHTML = `<div class="tt-d">${ds}</div><div class="tt-v">${chart.fmt(nearest.d.v)}</div>`;
+    tip.style.opacity=1;
+    tip.style.left = Math.min(e.clientX+12, window.innerWidth-90)+"px";
+    tip.style.top = (e.clientY-46)+"px";
+  });
+  svg.addEventListener("pointerleave", ()=>{ cx.style.opacity=0; dot.style.opacity=0; tip.style.opacity=0; });
+}
+
+/* ---------- metric card ---------- */
+function clean(v) {
+  if (v === null || v === undefined) return "—";
+  const s = String(v);
+  return /\bnull\b|NaN|undefined/.test(s) ? "—" : s;
+}
+function card(icon, sect, series, big, bigUnit, statPairs, explainVars, fmt) {
+  const L = I18N[state.lang];
+  const stats = statPairs.map(([k,v])=>`<div class="stat"><div class="k">${k}</div><div class="v">${clean(v)}</div></div>`).join("");
+  const cleanVars = {}; for (const k in explainVars) cleanVars[k] = clean(explainVars[k]);
+  const explain = tmpl(sect.explain, cleanVars);
+  big = clean(big);
+  const loc = state.lang==="en"?"en-US":state.lang==="pt"?"pt-PT":"ru-RU";
+  const win = (series||[]).slice(-state.range);
+  const firstD = win.length ? win[0].date.toLocaleDateString(loc,{day:"numeric",month:"short"}) : "";
+  const lastD = win.length ? win[win.length-1].date.toLocaleDateString(loc,{day:"numeric",month:"short"}) : "";
+  const chart = trendSVG(series, {fmt});
+  const html = `<div class="card">
+    <div class="card-head"><div class="ic">${icon}</div><h3>${sect.title}</h3>
+      <div class="big">${big}${bigUnit?`<small>${bigUnit}</small>`:""}</div></div>
+    <div class="stats">${stats}</div>
+    <p class="explain">${explain}</p>
+    <div class="trend">${chart.svg}<div class="trend-foot"><span>${firstD}</span><span>${lastD}</span></div></div>
+  </div>`;
+  return { html, chart };
+}
+
+/* ---------- render ---------- */
+function render() {
+  const L = I18N[state.lang];
+  document.documentElement.lang = state.lang;
+
+  // greeting
+  const h = SAMPLE.date.getHours();
+  $("#gGreet").textContent = h < 12 ? L.greetMorning : h < 18 ? L.greetDay : L.greetEvening;
+  $("#gDate").textContent = SAMPLE.date.toLocaleDateString(
+    state.lang==="en"?"en-US":state.lang==="pt"?"pt-PT":"ru-RU",
+    {weekday:"long", day:"numeric", month:"long"});
+  $("#demoFlag").textContent = L.demo;
+  $("#demoFlag").style.display = IS_DEMO ? "" : "none";
+  // login bar (only in demo / logged-out state)
+  $("#loginBar").style.display = IS_DEMO ? "" : "none";
+  $("#loginTitle").textContent = L.loginTitle;
+  $("#loginSub").textContent = L.loginSub;
+
+  // today rings
+  const lastV = (a, f=0) => (a && a.length ? a.at(-1).v : f);
+  const sVal = lastV(SAMPLE.sleepScore), rVal = lastV(SAMPLE.readiness), aVal = lastV(SAMPLE.activity);
+  $("#todayRings").innerHTML = ring(sVal, L.ring.sleep, L) + ring(rVal, L.ring.readiness, L) + ring(aVal, L.ring.activity, L);
+
+  // insight: the Gemini observation lives in the Telegram summary; on the
+  // dashboard we show it only if the API supplied one, or a generic tip in demo.
+  const obs = SAMPLE.observation || (IS_DEMO ? L.insights[0] : "");
+  if (obs) {
+    $("#insightBox").style.display = "";
+    $("#insightText").textContent = obs;
+    $("#insightSrc").textContent = L.insightSrc;
+  } else {
+    $("#insightBox").style.display = "none";
+  }
+
+  // footer
+  $("#footText").textContent = L.foot; $("#footPriv").textContent = L.footPriv; $("#footTerms").textContent = L.footTerms;
+  $("#feedbackBtn").textContent = L.feedback;
+
+  // metric cards
+  const t = SAMPLE.today;
+  const sign = v => (v>=0?"+":"")+v;
+  const cards = [];
+
+  // 1. Sleep
+  cards.push(card("☾", L.sleep, SAMPLE.sleepScore, Math.round(sVal), "", [
+    [L.sleep.k.dur, fmtDuration(t.sleep.dur)],
+    [L.sleep.k.inbed, fmtDuration(t.sleep.inbed)],
+    [L.sleep.k.eff, t.sleep.eff+"%"],
+    [L.sleep.k.latency, fmtDuration(t.sleep.latency)],
+    [L.sleep.k.deep, fmtDuration(t.sleep.deep)],
+    [L.sleep.k.rem, fmtDuration(t.sleep.rem)],
+    [L.sleep.k.light, fmtDuration(t.sleep.light)],
+    [L.sleep.k.awake, fmtDuration(t.sleep.awake)],
+    [L.sleep.k.restful, t.sleep.restful],
+    [L.sleep.k.resp, t.sleep.resp+"/"+L.units.min],
+    [L.sleep.k.hr, t.sleep.hr+" "+L.units.bpm],
+    [L.sleep.k.hrv, t.sleep.hrv+" "+L.units.ms],
+    [L.sleep.k.bedtime, t.sleep.bedtime],
+    [L.sleep.k.waketime, t.sleep.waketime],
+  ], { dur: fmtDuration(t.sleep.dur), inbed: fmtDuration(t.sleep.inbed), eff: t.sleep.eff, latency: fmtDuration(t.sleep.latency), resp: t.sleep.resp }, v=>Math.round(v)));
+
+  // 2. Readiness
+  cards.push(card("✔", L.readiness, SAMPLE.readiness, Math.round(rVal), "", [
+    [L.readiness.k.rhr, t.readiness.rhr+" "+L.units.bpm],
+    [L.readiness.k.hrv, t.readiness.hrv+" "+L.units.ms],
+    [L.readiness.k.temp, sign(t.readiness.temp)+"°C"],
+    [L.readiness.k.ri, t.readiness.ri],
+    [L.readiness.k.sb, t.readiness.sb],
+    [L.readiness.k.hb, t.readiness.hb],
+    [L.readiness.k.recovery, L.resLevels[t.readiness.recovery]],
+  ], { rhr: t.readiness.rhr, hrv: t.readiness.hrv, ri: t.readiness.ri }, v=>Math.round(v)));
+
+  // 3. Activity
+  cards.push(card("⚡", L.activity, SAMPLE.steps, Math.round(aVal), "", [
+    [L.activity.k.steps, nf(t.activity.steps)],
+    [L.activity.k.stepsTarget, nf(t.activity.stepsTarget)],
+    [L.activity.k.distance, t.activity.distance+" "+L.units.km],
+    [L.activity.k.cal, nf(t.activity.cal)+" "+L.units.kcal],
+    [L.activity.k.totalCal, nf(t.activity.totalCal)+" "+L.units.kcal],
+    [L.activity.k.target, nf(t.activity.target)+" "+L.units.kcal],
+    [L.activity.k.met, t.activity.met],
+    [L.activity.k.high, fmtDuration(t.activity.high)],
+    [L.activity.k.medium, fmtDuration(t.activity.medium)],
+    [L.activity.k.low, fmtDuration(t.activity.low)],
+    [L.activity.k.sedentary, fmtDuration(t.activity.sedentary)],
+  ], { steps: nf(t.activity.steps), stepsTarget: nf(t.activity.stepsTarget), cal: nf(t.activity.cal), distance: t.activity.distance, rest: nf(t.activity.rest)+" "+L.units.kcal }, v=>nf(Math.round(v))));
+
+  // 4. Heart & HRV
+  cards.push(card("♥", L.hr, SAMPLE.hrv, t.hr.hrv, L.units.ms, [
+    [L.hr.k.rhr, t.hr.rhr+" "+L.units.bpm],
+    [L.hr.k.hrv, t.hr.hrv+" "+L.units.ms],
+    [L.hr.k.avg, t.hr.avg+" "+L.units.bpm],
+    [L.hr.k.max, t.hr.max+" "+L.units.bpm],
+  ], { rhr: t.hr.rhr, hrv: t.hr.hrv, avg: t.hr.avg }, v=>Math.round(v)+" "+L.units.ms));
+
+  // 5. Temperature
+  cards.push(card("🌡", L.temp, SAMPLE.temp, sign(t.temp.dev), "°C", [
+    [L.temp.k.dev, sign(t.temp.dev)+"°C"],
+    [L.temp.k.trend, sign(t.temp.trend)+"°C"],
+  ], { dev: sign(t.temp.dev), trend: sign(t.temp.trend) }, v=>sign(+v.toFixed(2))+"°C"));
+
+  // 6. Stress & Resilience
+  const stressHigh = fmtDuration(t.stress.high), stressRec = fmtDuration(t.stress.rec);
+  cards.push(card("◈", L.stress, SAMPLE.stress, Math.round(SAMPLE.stress.at(-1).v), "", [
+    [L.stress.k.high, stressHigh],
+    [L.stress.k.rec, stressRec],
+    [L.stress.k.day, L.dayLevels[t.stress.day]],
+    [L.stress.k.res, L.resLevels[t.stress.res]],
+  ], { high: stressHigh, rec: stressRec, day: L.dayLevels[t.stress.day], res: L.resLevels[t.stress.res] }, v=>Math.round(v)));
+
+  // 7. SpO2 & Breathing
+  cards.push(card("◍", L.spo2, SAMPLE.spo2, t.spo2.avg, "%", [
+    [L.spo2.k.avg, t.spo2.avg+"%"],
+    [L.spo2.k.bdi, t.spo2.bdi],
+    [L.spo2.k.resp, t.spo2.resp+"/"+L.units.min],
+  ], { avg: t.spo2.avg, bdi: t.spo2.bdi, resp: t.spo2.resp }, v=>v.toFixed(1)+"%"));
+
+  // 8. Cardiovascular age & VO2 max
+  cards.push(card("⬡", L.cardio, SAMPLE.vo2, t.cardio.vo2, "", [
+    [L.cardio.k.age, t.cardio.age+" "+L.units.yr],
+    [L.cardio.k.vo2, t.cardio.vo2],
+  ], { age: t.cardio.age, vo2: t.cardio.vo2 }, v=>v.toFixed(1)));
+
+  $("#metricGrid").innerHTML = cards.map(c=>c.html).join("");
+  // attach hover after DOM insert
+  const nodes = $("#metricGrid").querySelectorAll(".card");
+  nodes.forEach((node, i)=> attachHover(node, cards[i].chart));
+}
+
+/* ---------- controls ---------- */
+$("#langSeg").addEventListener("click", e=>{
+  const b = e.target.closest("button"); if(!b) return;
+  state.lang = b.dataset.lang;
+  [...$("#langSeg").children].forEach(x=>x.setAttribute("aria-pressed", x===b));
+  render();
+});
+$("#rangeSeg").addEventListener("click", e=>{
+  const b = e.target.closest("button"); if(!b) return;
+  state.range = +b.dataset.range;
+  [...$("#rangeSeg").children].forEach(x=>x.setAttribute("aria-pressed", x===b));
+  render();
+});
+$("#themeBtn").addEventListener("click", ()=>{
+  const cur = document.documentElement.getAttribute("data-theme") || "navy";
+  const next = cur === "light" ? "navy" : "light";
+  document.documentElement.setAttribute("data-theme", next);
+  render();
+});
+
+/* ============================================================
+   Live data: fetch GET /api/dashboard using Telegram Login Widget
+   auth params from the URL query string. Falls back to demo data
+   when opened without auth (or on any error).
+   ============================================================ */
+const pv = (o, ...ks) => ks.reduce((a,k)=> (a==null?null:a[k]), o);
+const secToMin = s => (typeof s==="number" ? Math.round(s/60) : null);
+const hhmm = iso => { if(!iso) return null; const d=new Date(iso); return isNaN(d)?null:
+  String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); };
+
+function toSeries(arr) {
+  return (arr||[]).map(p => ({ date: new Date(p.date), v: p.v }));
+}
+
+function mapApiToState(api) {
+  const s = api.series || {};
+  const t = api.today || {};
+  const sl = t.sleep||{}, rd = t.readiness||{}, ac = t.activity||{}, hr = t.heartrate||{},
+        sp = t.spo2||{}, st = t.stress||{}, rs = t.resilience||{}, tp = t.temperature||{}, cd = t.cardio||{};
+  const rc = rd.contributors||{};
+  const spAvg = pv(sp,"spo2_percentage","average") ?? sp.average ?? null;
+  const calToGoal = (typeof ac.target_calories==="number" && typeof ac.active_calories==="number")
+    ? Math.max(0, Math.round(ac.target_calories - ac.active_calories)) : null;
+  return {
+    date: api.date ? new Date(api.date) : new Date(),
+    observation: api.observation || null,
+    sleepScore: toSeries(s.sleepScore),
+    readiness:  toSeries(s.readiness),
+    activity:   toSeries(s.activity),
+    hrv:        toSeries(s.hrv),
+    rhr:        toSeries(s.rhr),
+    temp:       toSeries(s.temp),
+    stress:     toSeries(s.stress),
+    steps:      toSeries(s.steps),
+    spo2:       toSeries(s.spo2),
+    vo2:        toSeries(s.vo2),
+    today: {
+      sleep: {
+        dur: secToMin(sl.total_sleep_duration), inbed: secToMin(sl.time_in_bed),
+        eff: sl.efficiency ?? null, latency: secToMin(sl.latency),
+        deep: secToMin(sl.deep_sleep_duration), rem: secToMin(sl.rem_sleep_duration),
+        light: secToMin(sl.light_sleep_duration), awake: secToMin(sl.awake_time),
+        restful: sl.restfulness ?? null, resp: sl.average_breath ?? null,
+        hr: sl.average_heart_rate ?? sl.lowest_heart_rate ?? null, hrv: sl.average_hrv ?? null,
+        bedtime: hhmm(sl.bedtime_start), waketime: hhmm(sl.bedtime_end),
+      },
+      readiness: {
+        rhr: rd.resting_heart_rate ?? hr.lowest_heart_rate ?? null, hrv: hr.average_hrv ?? null,
+        temp: tp.deviation ?? null, recovery: levelKey(rs.level),
+        ri: rc.recovery_index ?? null, sb: rc.sleep_balance ?? null, hb: rc.hrv_balance ?? null,
+      },
+      activity: {
+        steps: ac.steps ?? null, stepsTarget: null,
+        cal: ac.active_calories ?? null, totalCal: ac.total_calories ?? null,
+        target: ac.target_calories ?? null,
+        distance: typeof ac.equivalent_walking_distance==="number" ? Math.round(ac.equivalent_walking_distance/100)/10 : null,
+        met: ac.average_met_minutes!=null ? Math.round(ac.average_met_minutes) : null,
+        sedentary: secToMin(ac.sedentary_time), low: secToMin(ac.low_activity_time),
+        medium: secToMin(ac.medium_activity_time), high: secToMin(ac.high_activity_time),
+        rest: calToGoal,
+      },
+      hr: { rhr: rd.resting_heart_rate ?? hr.lowest_heart_rate ?? null, hrv: hr.average_hrv ?? null,
+            avg: hr.average_heart_rate ?? null, max: null },
+      temp: { dev: tp.deviation ?? null, trend: tp.trend ?? null },
+      stress: { high: secToMin(st.stress_high), rec: secToMin(st.recovery_high),
+                res: levelKey(rs.level), day: dayKey(st.day_summary) },
+      spo2: { avg: spAvg, bdi: sp.breathing_disturbance_index ?? null, resp: sl.average_breath ?? null },
+      cardio: { age: cd.cardiovascular_age ?? null, vo2: cd.vo2_max ?? null },
+    },
+  };
+}
+function levelKey(v){ const m={limited:"limited",fair:"adequate",adequate:"adequate",good:"solid",solid:"solid",strong:"strong",exceptional:"exceptional"};
+  return v && m[String(v).toLowerCase()] ? m[String(v).toLowerCase()] : "solid"; }
+function dayKey(v){ const m={stressful:"stressful",restored:"restored",normal:"normal",relaxed:"relaxed"};
+  return v && m[String(v).toLowerCase()] ? m[String(v).toLowerCase()] : "normal"; }
+
+async function fetchDashboard(paramsObj) {
+  const qs = new URLSearchParams(paramsObj).toString();
+  const res = await fetch("/api/dashboard?" + qs, { headers: { "Accept": "application/json" } });
+  if (!res.ok) throw new Error("auth " + res.status);
+  const api = await res.json();
+  if (!api.today || !(api.series && api.series.sleepScore && api.series.sleepScore.length)) throw new Error("no data");
+  SAMPLE = mapApiToState(api);
+  IS_DEMO = false;
+  if (api.language && I18N[api.language]) {
+    state.lang = api.language;
+    [...$("#langSeg").children].forEach(x=>x.setAttribute("aria-pressed", x.dataset.lang===api.language));
+  }
+  render();
+}
+
+// Telegram Login Widget callback (must be global).
+window.onTelegramAuth = async (user) => {
+  try {
+    await fetchDashboard(user);
+  } catch (e) {
+    console.warn("[dashboard] login fetch failed:", e.message);
+    const L = I18N[state.lang];
+    alert(L.loginError || "Не удалось загрузить данные. Убедитесь, что вы подключили Oura в боте.");
+  }
+};
+
+const TG_BOT = "O_trackerbot"; // Telegram bot username (without @)
+function mountTelegramLogin() {
+  const c = $("#tgLoginBtn");
+  if (!c || c.dataset.mounted) return;
+  c.dataset.mounted = "1";
+  const s = document.createElement("script");
+  s.async = true;
+  s.src = "https://telegram.org/js/telegram-widget.js?22";
+  s.setAttribute("data-telegram-login", TG_BOT);
+  s.setAttribute("data-size", "medium");
+  s.setAttribute("data-userpic", "false");
+  s.setAttribute("data-onauth", "onTelegramAuth(user)");
+  s.setAttribute("data-request-access", "write");
+  c.appendChild(s);
+}
+
+async function loadData() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("id") && params.get("hash")) {
+    try {
+      const obj = {};
+      params.forEach((v, k) => (obj[k] = v));
+      await fetchDashboard(obj);
+      return;
+    } catch (e) {
+      console.warn("[dashboard] url-auth failed:", e.message);
+    }
+  }
+  // Not logged in → show demo + Telegram login button.
+  IS_DEMO = true;
+  render();
+  mountTelegramLogin();
+}
+
+loadData();
+</script>
+</body>
+</html>
