@@ -18,7 +18,9 @@ export interface TelegramAuthData {
   [k: string]: string | undefined;
 }
 
-const MAX_AGE_SECONDS = 24 * 60 * 60;
+// How long a Telegram login stays valid. Kept generous (30 days) so the
+// dashboard can remember the user and not require re-login on every visit.
+const MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
 
 export function verifyTelegramAuth(data: TelegramAuthData): boolean {
   const { hash, ...fields } = data;
