@@ -22,13 +22,22 @@ async function main(): Promise<void> {
 
   const app = await buildServer(bot as never);
 
-  // Point Telegram at our webhook.
+  // Point Telegram at our webhook. Wrapped so a failure never dumps the bot
+  // token (which lives in the request URL) into the logs.
   const webhookUrl = `${config.PUBLIC_URL}${TELEGRAM_WEBHOOK_PATH}`;
-  await bot.api.setWebhook(webhookUrl, {
-    secret_token: config.TELEGRAM_WEBHOOK_SECRET,
-    drop_pending_updates: false,
-  });
-  console.log(`[boot] webhook set: ${config.PUBLIC_URL}${TELEGRAM_WEBHOOK_PATH.replace(config.TELEGRAM_WEBHOOK_SECRET, "***")}`);
+  try {
+    await bot.api.setWebhook(webhookUrl, {
+      secret_token: config.TELEGRAM_WEBHOOK_SECRET,
+      // Drop any backlog that piled up while the free instance was asleep, so a
+      // redeploy doesn't flush a burst of old/duplicate messages.
+      drop_pending_updates: true,
+    });
+    console.log(`[boot] webhook set: ${config.PUBLIC_URL}${TELEGRAM_WEBHOOK_PATH.replace(config.TELEGRAM_WEBHOOK_SECRET, "***")}`);
+  } catch (e) {
+    const msg = e && typeof e === "object" && "message" in e ? (e as { message: unknown }).message : "unknown";
+    console.error("[boot] setWebhook failed (check TELEGRAM_BOT_TOKEN / PUBLIC_URL):", typeof msg === "string" ? msg : "error");
+    throw new Error("setWebhook failed");
+  }
 
   startScheduler(bot as never);
 
@@ -49,6 +58,7 @@ async function main(): Promise<void> {
 }
 
 main().catch((err) => {
-  console.error("Fatal boot error:", err);
+  const msg = err && typeof err === "object" && "message" in err ? (err as { message: unknown }).message : String(err);
+  console.error("Fatal boot error:", typeof msg === "string" ? msg : "unknown");
   process.exit(1);
 });

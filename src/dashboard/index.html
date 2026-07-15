@@ -48,6 +48,7 @@
   }
 
   * { box-sizing: border-box; }
+  html, body { max-width: 100%; overflow-x: hidden; }
   body {
     margin: 0; color: var(--text-primary);
     font-family: var(--font); font-size: 15px; line-height: 1.5;
@@ -125,7 +126,8 @@
   }
   .today-rings { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
   .ring-card { text-align: center; padding: 6px 4px; }
-  .ring-wrap { position: relative; width: 108px; height: 108px; margin: 0 auto 6px; }
+  .ring-wrap { position: relative; width: 108px; height: 108px; max-width: 100%; margin: 0 auto 6px; }
+  .ring-wrap svg { width: 100%; height: 100%; display: block; }
   .ring-wrap .val {
     position: absolute; inset: 0; display: grid; place-items: center;
     font-size: 26px; font-weight: 700; letter-spacing: -0.02em;
@@ -204,6 +206,12 @@
     .ring-wrap { width: 92px; height: 92px; }
     .ring-wrap .val { font-size: 22px; }
     .brand span.name { display: none; }
+    /* keep the top bar on one line and inside the screen */
+    .topbar-inner { gap: 7px; padding: 10px 12px; flex-wrap: wrap; }
+    .seg { padding: 2px; gap: 1px; }
+    .seg button { padding: 5px 8px; font-size: 12px; }
+    .icon-btn { width: 30px; height: 30px; font-size: 14px; }
+    .demo-flag { display: none; }
   }
 </style>
 </head>
@@ -214,6 +222,7 @@
       <span class="demo-flag" id="demoFlag">demo</span>
       <div class="spacer"></div>
       <div class="seg" id="rangeSeg" role="group" aria-label="range">
+        <button data-range="1" aria-pressed="false">1</button>
         <button data-range="7" aria-pressed="true">7</button>
         <button data-range="30" aria-pressed="false">30</button>
       </div>
@@ -502,6 +511,7 @@ function trendSVG(series, opts={}) {
 
 function attachHover(container, chart) {
   const svg = container.querySelector("svg");
+  if (!svg) return; // "1 day" view has no chart
   const cx = svg.querySelector(".cx"), dot = svg.querySelector(".cxdot");
   if (!cx || !dot || !chart.pts || !chart.pts.length) return;
   const tip = $("#tooltip");
@@ -540,14 +550,19 @@ function card(icon, sect, series, big, bigUnit, statPairs, explainVars, fmt) {
   const firstD = win.length ? win[0].date.toLocaleDateString(loc,{day:"numeric",month:"short"}) : "";
   const lastD = win.length ? win[win.length-1].date.toLocaleDateString(loc,{day:"numeric",month:"short"}) : "";
   const chart = trendSVG(series, {fmt});
+  // "1 day" view: no trend graph (a single day has no trend) — show only today's values.
+  const showTrend = state.range > 1 && win.length >= 2;
+  const trendHtml = showTrend
+    ? `<div class="trend">${chart.svg}<div class="trend-foot"><span>${firstD}</span><span>${lastD}</span></div></div>`
+    : "";
   const html = `<div class="card">
     <div class="card-head"><div class="ic">${icon}</div><h3>${sect.title}</h3>
       <div class="big">${big}${bigUnit?`<small>${bigUnit}</small>`:""}</div></div>
     <div class="stats">${stats}</div>
     <p class="explain">${explain}</p>
-    <div class="trend">${chart.svg}<div class="trend-foot"><span>${firstD}</span><span>${lastD}</span></div></div>
+    ${trendHtml}
   </div>`;
-  return { html, chart };
+  return { html, chart, showTrend };
 }
 
 /* ---------- render ---------- */
@@ -790,10 +805,17 @@ async function fetchDashboard(paramsObj) {
   render();
 }
 
+// Remember the login so the user doesn't re-auth every visit.
+const AUTH_KEY = "otracker_auth";
+function saveAuth(u) { try { localStorage.setItem(AUTH_KEY, JSON.stringify(u)); } catch (e) {} }
+function loadAuth() { try { const s = localStorage.getItem(AUTH_KEY); return s ? JSON.parse(s) : null; } catch (e) { return null; } }
+function clearAuth() { try { localStorage.removeItem(AUTH_KEY); } catch (e) {} }
+
 // Telegram Login Widget callback (must be global).
 window.onTelegramAuth = async (user) => {
   try {
     await fetchDashboard(user);
+    saveAuth(user); // stay logged in on future visits
   } catch (e) {
     console.warn("[dashboard] login fetch failed:", e.message);
     const L = I18N[state.lang];
@@ -819,14 +841,21 @@ function mountTelegramLogin() {
 
 async function loadData() {
   const params = new URLSearchParams(window.location.search);
+  let auth = null;
   if (params.get("id") && params.get("hash")) {
+    auth = {};
+    params.forEach((v, k) => (auth[k] = v));
+  } else {
+    auth = loadAuth(); // remembered from a previous login
+  }
+  if (auth && auth.id && auth.hash) {
     try {
-      const obj = {};
-      params.forEach((v, k) => (obj[k] = v));
-      await fetchDashboard(obj);
+      await fetchDashboard(auth);
+      saveAuth(auth);
       return;
     } catch (e) {
-      console.warn("[dashboard] url-auth failed:", e.message);
+      console.warn("[dashboard] auth failed:", e.message);
+      clearAuth(); // stored login expired/invalid → show login again
     }
   }
   // Not logged in → show demo + Telegram login button.

@@ -65,17 +65,28 @@ export async function buildDashboard(userId: number, days = 30) {
     latest = r;
   }
 
+  // For "today", fall back to the most recent non-null value per metric so a
+  // late-syncing metric (activity/heart) shows yesterday's value instead of blank.
+  const desc = [...rows].reverse(); // newest first
+  const latestField = (key: keyof (typeof rows)[number]): unknown => {
+    for (const r of desc) {
+      const v = r[key];
+      if (v != null) return v;
+    }
+    return null;
+  };
+
   const today = latest
     ? {
-        sleep: latest.sleep ?? null,
-        readiness: latest.readiness ?? null,
-        activity: latest.activity ?? null,
-        heartrate: latest.heartrate ?? null,
-        spo2: latest.spo2 ?? null,
-        stress: latest.stress ?? null,
-        resilience: latest.resilience ?? null,
-        temperature: latest.temperature ?? null,
-        cardio: latest.cardio ?? null,
+        sleep: latestField("sleep") ?? null,
+        readiness: latestField("readiness") ?? null,
+        activity: latestField("activity") ?? null,
+        heartrate: latestField("heartrate") ?? null,
+        spo2: latestField("spo2") ?? null,
+        stress: latestField("stress") ?? null,
+        resilience: latestField("resilience") ?? null,
+        temperature: latestField("temperature") ?? null,
+        cardio: latestField("cardio") ?? null,
         day: DateTime.fromJSDate(latest.day).toISODate(),
       }
     : null;

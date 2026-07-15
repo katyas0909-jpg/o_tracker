@@ -28,7 +28,7 @@ const schema = z.object({
 
   // Gemini (Google AI Studio)
   GEMINI_API_KEY: z.string().min(1),
-  GEMINI_MODEL: z.string().default("gemini-2.5-flash"),
+  GEMINI_MODEL: z.string().default("gemini-3.5-flash"),
 
   // 32-byte key, base64-encoded, for AES-256-GCM token encryption.
   // Generate: node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
@@ -38,6 +38,10 @@ const schema = z.object({
   DEFAULT_LANGUAGE: z.enum(["ru", "en", "pt"]).default("ru"),
   GEMINI_DAILY_QUOTA_PER_USER: z.coerce.number().default(8),
   METRIC_CONTEXT_DAYS: z.coerce.number().default(7),
+
+  // Invite-only mode: comma-separated Telegram user IDs allowed to use the bot.
+  // Leave empty to allow anyone (open mode).
+  ALLOWED_TELEGRAM_IDS: z.string().default(""),
 });
 
 const parsed = schema.safeParse(process.env);
@@ -51,5 +55,10 @@ export const config = parsed.data;
 
 export const OURA_REDIRECT_URI = `${config.PUBLIC_URL}/oauth/oura/callback`;
 export const TELEGRAM_WEBHOOK_PATH = `/telegram/webhook/${config.TELEGRAM_WEBHOOK_SECRET}`;
+
+// Parsed allowlist. Empty set = open to everyone.
+export const ALLOWED_TELEGRAM_IDS = new Set(
+  config.ALLOWED_TELEGRAM_IDS.split(",").map((s) => s.trim()).filter(Boolean),
+);
 
 export type Config = typeof config;

@@ -1,6 +1,6 @@
 import { Bot, InlineKeyboard, session, type Context, type SessionFlavor } from "grammy";
 import { DateTime } from "luxon";
-import { config } from "../config.js";
+import { config, ALLOWED_TELEGRAM_IDS } from "../config.js";
 import { prisma } from "../lib/db.js";
 import { randomToken, encrypt } from "../lib/crypto.js";
 import { t, normalizeLang, LANG_LABELS, type Lang } from "../i18n/index.js";
@@ -48,6 +48,27 @@ export function createBot(): Bot<Ctx> {
       }
     }
     await next();
+  });
+
+  // Invite-only gate: if an allowlist is configured, only approved Telegram IDs
+  // may use the bot. Non-approved users get their own ID so they can request
+  // access. Empty allowlist = open to everyone.
+  bot.use(async (ctx, next) => {
+    if (ALLOWED_TELEGRAM_IDS.size === 0) return next();
+    const id = ctx.from?.id;
+    if (id && ALLOWED_TELEGRAM_IDS.has(String(id))) return next();
+    if (id) {
+      await ctx
+        .reply(
+          "🔒 Доступ к этому боту — по приглашению.\n" +
+            `Отправьте этот ID администратору, чтобы вас добавили:\n\n<code>${id}</code>\n\n` +
+            "🔒 This bot is invite-only. Send this ID to the admin to get access:\n" +
+            `<code>${id}</code>`,
+          { parse_mode: "HTML" },
+        )
+        .catch(() => {});
+    }
+    // stop — do not process further for non-approved users
   });
 
   bot.use(session({ initial: (): SessionData => ({}) }));
@@ -263,7 +284,11 @@ export function createBot(): Bot<Ctx> {
   });
 
   bot.catch((err) => {
-    console.error("[bot] error:", err.error);
+    // Log only a short message — never the full error object, which can carry
+    // the bot token / raw context and would leak secrets into logs.
+    const e = err.error as unknown;
+    const msg = e && typeof e === "object" && "message" in e ? (e as { message: unknown }).message : String(e);
+    console.error("[bot] error:", typeof msg === "string" ? msg : "unknown error");
   });
 
   return bot;

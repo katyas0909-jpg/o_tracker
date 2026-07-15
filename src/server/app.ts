@@ -22,6 +22,17 @@ export async function buildServer(bot: Bot): Promise<FastifyInstance> {
   const app = Fastify({ logger: { level: config.NODE_ENV === "development" ? "info" : "warn" } });
   await app.register(fastifyFormbody);
 
+  // ---- Security headers on every response ----
+  app.addHook("onSend", async (_req, reply, payload) => {
+    reply.header("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+    reply.header("X-Content-Type-Options", "nosniff");
+    reply.header("X-Frame-Options", "SAMEORIGIN");
+    reply.header("Referrer-Policy", "strict-origin-when-cross-origin");
+    reply.header("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
+    reply.header("X-XSS-Protection", "0");
+    return payload;
+  });
+
   // ---- Telegram webhook ----
   // Path secrecy + secret_token header both gate this endpoint.
   app.post(

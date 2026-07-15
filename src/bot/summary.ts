@@ -32,27 +32,43 @@ export async function composeSummary(
   lang: Lang,
   opts: { withObservation?: boolean } = {},
 ): Promise<ComposedSummary> {
-  const latest = await prisma.dailyMetric.findFirst({
+  // Pull recent days so we can fall back to the latest available value per metric
+  // (activity/heart finalize later than sleep, so today's row may still be empty).
+  const rows = await prisma.dailyMetric.findMany({
     where: { userId },
     orderBy: { day: "desc" },
+    take: 10,
   });
 
   const dashUrl = `${config.PUBLIC_URL}/`;
   const keyboard = new InlineKeyboard().url(t(lang, "summary.openDashboard"), dashUrl);
 
-  if (!latest) {
+  if (rows.length === 0) {
     return { text: t(lang, "summary.noData"), keyboard, hasData: false };
   }
+
+  const latest = rows[0]!;
+  // Most recent non-null value of a metric field across the recent days.
+  const latestObj = (key: string): unknown => {
+    for (const r of rows) {
+      const v = (r as Record<string, unknown>)[key];
+      if (v != null) return v;
+    }
+    return null;
+  };
+  const sleepObj = latestObj("sleep");
+  const readinessObj = latestObj("readiness");
+  const activityObj = latestObj("activity");
 
   const dateStr = DateTime.fromJSDate(latest.day)
     .setLocale(LOCALE[lang])
     .toLocaleString({ weekday: "long", day: "numeric", month: "long" });
 
-  const sleepScore = num(pick(latest.sleep, "score"));
-  const totalSleep = num(pick(latest.sleep, "total_sleep_duration"));
-  const readiness = num(pick(latest.readiness, "score"));
-  const activityScore = num(pick(latest.activity, "score"));
-  const steps = num(pick(latest.activity, "steps"));
+  const sleepScore = num(pick(sleepObj, "score"));
+  const totalSleep = num(pick(sleepObj, "total_sleep_duration"));
+  const readiness = num(pick(readinessObj, "score"));
+  const activityScore = num(pick(activityObj, "score"));
+  const steps = num(pick(activityObj, "steps"));
 
   const lines = [
     t(lang, "summary.title", { date: dateStr }),

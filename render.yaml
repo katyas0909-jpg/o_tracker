@@ -5,7 +5,10 @@ services:
   - type: web
     name: o-tracker
     runtime: node
-    plan: free # free tier sleeps after 15 min; Starter (~$7/mo) keeps webhooks responsive
+    plan: free # free tier sleeps after ~15 min idle; switch to "starter" (~$7/mo) to keep webhooks always responsive
+    # `prisma db push` creates the tables directly from schema.prisma (no migration
+    # files needed) — simplest for the beta. Switch to `prisma migrate deploy` once
+    # you start generating migrations (npx prisma migrate dev --name init locally).
     buildCommand: npm install && npm run build && npx prisma db push
     startCommand: npm start
     healthCheckPath: /healthz
@@ -29,7 +32,7 @@ services:
       - key: GEMINI_API_KEY
         sync: false
       - key: GEMINI_MODEL
-        value: gemini-2.5-flash
+        value: gemini-3.5-flash
       - key: ENCRYPTION_KEY
         sync: false # node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
       - key: DEFAULT_LANGUAGE
@@ -38,7 +41,9 @@ services:
         value: "8"
       - key: METRIC_CONTEXT_DAYS
         value: "7"
+      - key: ALLOWED_TELEGRAM_IDS
+        sync: false # invite-only allowlist; comma-separated Telegram IDs. Empty = open to all.
 
 databases:
   - name: o-tracker-db
-    plan: free # managed Postgres (~$6-7/mo)
+    plan: free # free Postgres (1 GB, expires after 30 days). Switch to "basic-256mb" (~$7/mo) for a permanent DB.
