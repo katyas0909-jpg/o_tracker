@@ -1,0 +1,70 @@
+{
+  "start": {
+    "welcome": "Olá! Sou o *O Tracker* — um assistente para o seu Oura Ring.\n\nVou enviar um resumo diário de sono, prontidão e atividade, e responder a perguntas sobre os seus dados.\n\nPara começar, ligue a sua conta Oura — é seguro, a palavra-passe só é introduzida no site da Oura.",
+    "chooseLanguage": "Primeiro, escolha o seu idioma:",
+    "connectButton": "🔗 Ligar Oura",
+    "languageSet": "Idioma alterado para Português 🇵🇹"
+  },
+  "connect": {
+    "prompt": "Toque no botão abaixo para ligar a sua conta Oura. O link é único e válido por 10 minutos.",
+    "button": "🔗 Ligar Oura",
+    "already": "A sua conta Oura já está ligada ✅. Para religar, use /connect novamente.",
+    "success": "Pronto! A sua conta Oura está ligada ✅\n\nAgora pergunte-me o que quiser sobre os seus dados ou aguarde o resumo da manhã. Comandos — /help.",
+    "linkText": "Abrir a página de ligação"
+  },
+  "settings": {
+    "title": "⚙️ Definições",
+    "language": "Idioma: {lang}",
+    "timezone": "Fuso horário: {tz}",
+    "summaryTime": "Hora do resumo: {time}",
+    "generalMode": "Perguntas gerais de saúde: {state}",
+    "on": "ligado",
+    "off": "desligado",
+    "askSummaryTime": "A que horas devo enviar o resumo diário? Envie a hora como HH:MM (ex.: 08:00).",
+    "summaryTimeSet": "Hora do resumo definida para {time} ✅",
+    "askTimezone": "Envie o seu fuso horário no formato IANA (ex.: Europe/Lisbon).",
+    "timezoneSet": "Fuso horário definido: {tz} ✅",
+    "generalToggled": "Perguntas gerais de saúde: {state}",
+    "disconnect": "🗑 Desligar Oura e apagar dados",
+    "disconnected": "Conta Oura desligada e todos os seus dados apagados. Pode religar quando quiser com /connect."
+  },
+  "summary": {
+    "title": "☀️ Resumo de {date}",
+    "sleep": "😴 Sono: *{score}* ({dur})",
+    "readiness": "🔋 Prontidão: *{score}*",
+    "activity": "🏃 Atividade: *{score}* ({steps} passos)",
+    "noData": "Ainda não há dados de hoje. O anel pode não ter sincronizado, ou pode ser necessária a Oura Membership.",
+    "openDashboard": "📊 Abrir painel",
+    "fromDay": "(dados de {date})"
+  },
+  "assistant": {
+    "thinking": "A analisar os seus dados…",
+    "notConnected": "Ligue primeiro a sua conta Oura com /connect — assim posso responder com base nos seus dados.",
+    "quotaReached": "Atingiu o limite de perguntas de hoje. Tente amanhã — assim o limite gratuito partilhado chega para todos 🙏",
+    "rateLimited": "Está com muito movimento agora, tente novamente daqui a alguns minutos.",
+    "error": "Não consegui processar isso. Tente novamente mais tarde.",
+    "generalPrompt": "Essa é uma pergunta geral — não se baseia nos seus dados Oura. Responder como conselho geral?",
+    "generalYes": "Sim, conselho geral",
+    "generalTag": "ℹ️ Informação geral, não baseada nos seus dados.",
+    "generalDisabled": "É uma pergunta geral de saúde, não sobre os seus números específicos. Ative o modo de perguntas gerais em /settings se quiser essas respostas."
+  },
+  "help": {
+    "text": "*Comandos do O Tracker*\n\n/today — resumo de hoje\n/week — visão semanal\n/connect — ligar/religar Oura\n/settings — idioma, fuso horário, hora do resumo\n/language — mudar idioma\n/help — esta ajuda\n\nBasta escrever uma pergunta — respondo com base nos seus dados.",
+    "medical": "Não faço diagnósticos. Para questões médicas, consulte um profissional."
+  },
+  "metrics": {
+    "sleep": "Sono",
+    "readiness": "Prontidão",
+    "activity": "Atividade",
+    "hrv": "HRV",
+    "rhr": "FC de repouso",
+    "temperature": "Temperatura corporal",
+    "spo2": "SpO₂",
+    "stress": "Stress",
+    "resilience": "Resiliência",
+    "steps": "Passos"
+  },
+  "errors": {
+    "generic": "Algo correu mal. Tente novamente."
+  }
+}

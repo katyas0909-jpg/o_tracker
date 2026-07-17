@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Политика конфиденциальности · O Tracker</title>
+<style>
+body{margin:0;background:#070d1c;color:#eef3fc;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.65}
+.wrap{max-width:720px;margin:0 auto;padding:48px 22px 80px}
+h1{font-size:24px;letter-spacing:-.02em}h2{font-size:17px;margin-top:32px}
+p,li{color:#c3cde0}a{color:#57a5ff}.muted{color:#6d7c9e;font-size:13px}
+.mark{width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,#57a5ff,#24467e);display:grid;place-items:center;font-weight:800;color:#fff;margin-bottom:18px}
+</style></head>
+<body><div class="wrap">
+<div class="mark">O</div>
+<h1>Политика конфиденциальности</h1>
+<p class="muted">Последнее обновление: 9 июля 2026 · <a href="/terms">Условия использования</a> · <a href="/">Дашборд</a></p>
+
+<p>O Tracker («мы», «сервис») — независимый ассистент для данных кольца Oura. Мы не связаны с Ōura Health Oy. Эта страница объясняет, какие данные мы обрабатываем и зачем. Английская и португальская версии доступны по запросу.</p>
+
+<h2>Какие данные мы обрабатываем</h2>
+<ul>
+<li>Идентификатор вашего Telegram-аккаунта, имя и язык — для работы бота и входа в дашборд.</li>
+<li>Токены доступа Oura (OAuth2) — хранятся в зашифрованном виде. Мы никогда не видим и не храним ваш пароль от Oura.</li>
+<li>Ваши метрики Oura (сон, готовность, активность, пульс, HRV, температура, SpO₂, стресс и др.) — кэшируются, чтобы показывать сводку и дашборд и отвечать на вопросы.</li>
+</ul>
+
+<h2>Как используются данные</h2>
+<p>Данные используются только для предоставления вам сервиса: ежедневная сводка, дашборд и ответы ассистента на основе ваших показателей. Чтобы формировать ответы, обезличенный контекст ваших метрик отправляется в модель Google Gemini. На бесплатном тарифе Gemini содержимое запросов может использоваться Google для улучшения моделей — учитывайте это при использовании сервиса.</p>
+
+<h2>Хранение и защита</h2>
+<p>Токены шифруются на уровне приложения (AES-256-GCM). Соединения защищены HTTPS. Мы не логируем токены и сырые данные о здоровье.</p>
+
+<h2>Ваши права</h2>
+<p>Вы можете в любой момент отключить Oura и удалить все свои данные командой <code>/settings → Отключить</code> в боте. Это немедленно удаляет токены и кэш ваших метрик. По вопросам, связанным с GDPR, напишите нам.</p>
+
+<h2>Контакт</h2>
+<p>Вопросы по конфиденциальности: <a href="mailto:privacy@example.com">privacy@example.com</a> (замените на реальный адрес перед запуском).</p>
+</div></body></html>
